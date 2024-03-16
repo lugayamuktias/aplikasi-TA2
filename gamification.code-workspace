@@ -1,0 +1,40 @@
+{
+	"folders": [
+		{
+			"path": "C:/laragon/www/gamification"
+		},
+		{
+			"path": "C:/Users/Dell/Pictures/IWA"
+		},
+		{
+			"path": "../../Semester 7/Pemrograman Basis Data/test-web"
+		},
+		{
+			"path": "."
+		},
+		{
+			"path": "C:/Users/Dell/Downloads/Telegram Desktop/vuexy-html-bootstrap5-admin-template"
+		},
+		{
+			"path": "C:/Users/Dell/Downloads/tixia.dexignzone.com"
+		},
+		{
+			"path": "../TA2/steganography-main"
+		},
+		{
+			"path": "../TA2/Image-Steganography-master"
+		},
+		{
+			"path": "../TA2/image-encryption-main"
+		},
+		{
+			"path": "../TA2/AES-CBC-ECB-Example-master/AES-CBC-ECB-Example-master"
+		}
+	],
+	"settings": {},
+	"extensions": {
+		"recommendations": [
+			"esbenp.prettier-vscode"
+		]
+	}
+}

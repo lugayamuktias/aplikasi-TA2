@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Steganography 2</title>
+</head>
+<body>
+    <h1>Image Steganography 2</h1>
+    
+    <!-- Form untuk proses embedding -->
+    <h2>Embedding</h2>
+    <form id="embeddingForm" method="post" enctype="multipart/form-data">
+        <h3>Masukkan Secret Image</h3>
+        <input type="file" name="secret_image" id="secret_image" accept="image/*">
+        <br>
+        <div id="secretImagePreview"></div>
+        <h3>Masukkan Cover Image</h3>
+        <input type="file" name="cover_image" id="cover_image" accept="image/*">
+        <br>
+        <div id="coverImagePreview"></div>
+        <br>
+        <button type="submit">Process Images</button>
+    </form>
+
+    <!-- Form untuk proses dekripsi stego image -->
+    <h2>Decryption</h2>
+    <form id="decryptionForm" method="post" enctype="multipart/form-data">
+        <h3>Masukkan Stego Image</h3>
+        <input type="file" name="stego_image" id="stego_image" accept="image/*">
+        <br>
+        <div id="stegoImagePreview"></div>
+        <br>
+        <button type="submit">Decrypt Stego Image</button>
+    </form>
+
+    <!-- Div untuk menampilkan hasil proses -->
+    <div id="processedImage"></div>
+    
+    <!-- Script jQuery untuk menampilkan preview gambar -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Function to update image preview when file input changes
+            function updateImagePreview(input, previewId) {
+                if (input.files && input.files[0]) {
+                    var reader = new FileReader();
+
+                    reader.onload = function (e) {
+                        $('#' + previewId).html('<img src="' + e.target.result + '" width="200" />');
+                    }
+
+                    reader.readAsDataURL(input.files[0]);
+                }
+            }
+
+            // Update image preview when secret image file input changes
+            $('#secret_image').change(function() {
+                updateImagePreview(this, 'secretImagePreview');
+            });
+
+            // Update image preview when cover image file input changes
+            $('#cover_image').change(function() {
+                updateImagePreview(this, 'coverImagePreview');
+            });
+
+            // Update image preview when stego image file input changes
+            $('#stego_image').change(function() {
+                updateImagePreview(this, 'stegoImagePreview');
+            });
+
+            // Ajax request for embedding form
+            $('#embeddingForm').submit(function(event) {
+                event.preventDefault();
+                var formData = new FormData($(this)[0]);
+
+                $.ajax({
+                    url: '/upload',
+                    type: 'POST',
+                    data: formData,
+                    async: true,
+                    cache: false,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        $('#processedImage').html('<h2>Processed Image:</h2><img src="/static/output.png">');
+                    },
+                    error: function(xhr, status, error) {
+                        console.error(xhr.responseText);
+                    }
+                });
+            });
+
+            // Ajax request for decryption form
+            $('#decryptionForm').submit(function(event) {
+                event.preventDefault();
+                var formData = new FormData($(this)[0]);
+
+                $.ajax({
+                    url: '/stego_image',
+                    type: 'POST',
+                    data: formData,
+                    async: true,
+                    cache: false,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        $('#processedImage').html('<h2>Decrypted Image:</h2><img src="/secret_image"> <h2>Cover Image:</h2><img src="/cover_image">');
+                    },
+                    error: function(xhr, status, error) {
+                        console.error(xhr.responseText);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
