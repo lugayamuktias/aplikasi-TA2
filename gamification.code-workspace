@@ -29,6 +29,9 @@
 		},
 		{
 			"path": "../TA2/AES-CBC-ECB-Example-master/AES-CBC-ECB-Example-master"
+		},
+		{
+			"path": "../TA2/BasicImageEncryptionCBC-master/BasicImageEncryptionCBC-master"
 		}
 	],
 	"settings": {},

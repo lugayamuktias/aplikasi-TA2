@@ -52,42 +52,40 @@ def compress_image(input_path, output_path):
 
 # Fungsi untuk menyembunyikan gambar kedua ke dalam gambar pertama menggunakan LSB
 def embed_image(secret_image, cover_image, output_path):
-    # Convert secret image to RGB mode (removing alpha channel if present)
-    secret_image = secret_image.convert('RGB')
+    # Convert both images to RGB mode if one of them is RGBA
+    if cover_image.mode == 'RGBA':
+        cover_image = cover_image.convert('RGB')
+    if secret_image.mode == 'RGBA':
+        secret_image = secret_image.convert('RGB')
+
+    # Get dimensions of the cover image
+    width, height = cover_image.size
+
+    # Resize the secret image to fit within the cover image without stretching
+    secret_image.thumbnail((width, height))
+
+    # Get new dimensions of the resized secret image
+    new_width, new_height = secret_image.size
 
     # Convert images to numpy arrays
     secret_pixels = np.array(secret_image)
     cover_pixels = np.array(cover_image)
 
-    # Get dimensions of the cover image
-    cover_width, cover_height = cover_image.size
-
-    # Get dimensions of the secret image
-    secret_width, secret_height = secret_image.size
-
-    # Make sure secret image fits within cover image
-    if secret_width > cover_width or secret_height > cover_height:
-        raise ValueError("Secret image dimensions cannot exceed cover image dimensions")
-
-    # Calculate the starting position for embedding the secret image
-    start_x = (cover_width - secret_width) // 2
-    start_y = (cover_height - secret_height) // 2
-
     # Embed the secret image into the cover image using LSB with increased bits
-    for y in range(secret_height):
-        for x in range(secret_width):
+    for y in range(new_height):
+        for x in range(new_width):
             for c in range(3):  # RGB channels
                 # Clear the last 3 LSBs of the cover pixel
-                cover_pixels[start_y + y, start_x + x, c] &= ~7
+                cover_pixels[y, x, c] &= ~7
                 # Set the last 3 LSBs of the cover pixel to the corresponding bits of the secret image
-                cover_pixels[start_y + y, start_x + x, c] |= (secret_pixels[y, x, c] >> 5) & 7
+                cover_pixels[y, x, c] |= (secret_pixels[y, x, c] >> 5) & 7
 
     # Save the resulting image
     embedded_image = Image.fromarray(cover_pixels)
     embedded_image.save(output_path)
 
     # Calculate PSNR and MSE
-    mse = np.mean((secret_pixels - cover_pixels[start_y:start_y + secret_height, start_x:start_x + secret_width]) ** 2)
+    mse = np.mean((secret_pixels - cover_pixels[:new_height, :new_width]) ** 2)
     psnr = 20 * math.log10(255.0 / math.sqrt(mse))
 
     return psnr, mse
