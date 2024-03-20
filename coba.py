@@ -64,28 +64,30 @@ def embed_image(secret_image, cover_image, output_path):
     # Resize the secret image to fit within the cover image without stretching
     secret_image.thumbnail((width, height))
 
-    # Get new dimensions of the resized secret image
-    new_width, new_height = secret_image.size
-
     # Convert images to numpy arrays
     secret_pixels = np.array(secret_image)
     cover_pixels = np.array(cover_image)
 
+    # Get dimensions of the secret image after resizing
+    secret_width, secret_height = secret_image.size
+
     # Embed the secret image into the cover image using LSB with increased bits
-    for y in range(new_height):
-        for x in range(new_width):
+    for y in range(secret_height):
+        for x in range(secret_width):
             for c in range(3):  # RGB channels
-                # Clear the last 3 LSBs of the cover pixel
+                # Extract the last 3 bits of the secret image pixel
+                secret_bits = secret_pixels[y, x, c] & 7
+                # Clear the last 3 bits of the cover image pixel
                 cover_pixels[y, x, c] &= ~7
-                # Set the last 3 LSBs of the cover pixel to the corresponding bits of the secret image
-                cover_pixels[y, x, c] |= (secret_pixels[y, x, c] >> 5) & 7
+                # Set the last 3 bits of the cover image pixel to the corresponding bits of the secret image
+                cover_pixels[y, x, c] |= secret_bits
 
     # Save the resulting image
     embedded_image = Image.fromarray(cover_pixels)
     embedded_image.save(output_path)
 
     # Calculate PSNR and MSE
-    mse = np.mean((secret_pixels - cover_pixels[:new_height, :new_width]) ** 2)
+    mse = np.mean((secret_pixels[:secret_height, :secret_width] - cover_pixels[:secret_height, :secret_width]) ** 2)
     psnr = 20 * math.log10(255.0 / math.sqrt(mse))
 
     return psnr, mse
