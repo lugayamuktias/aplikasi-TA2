@@ -50,8 +50,9 @@ def compress_image(input_path, output_path):
     with open(output_path, 'wb') as f_out:
         f_out.write(compressed_data)
 
-# Fungsi untuk menyembunyikan gambar kedua ke dalam gambar pertama menggunakan LSB
 def embed_image(secret_image, cover_image, output_path):
+    global original_secret_size
+
     # Convert both images to RGB mode if one of them is RGBA
     if cover_image.mode == 'RGBA':
         cover_image = cover_image.convert('RGB')
@@ -60,6 +61,9 @@ def embed_image(secret_image, cover_image, output_path):
 
     # Get dimensions of the cover image
     width, height = cover_image.size
+
+    # Save the original size of the secret image
+    original_secret_size = secret_image.size
 
     # Resize the secret image to fit within the cover image without stretching
     secret_image = secret_image.resize((width, height))
@@ -91,11 +95,9 @@ def embed_image(secret_image, cover_image, output_path):
 def extract_image(stego_image, output_cover_path, output_secret_path):
     # Get dimensions of the stego image
     width, height = stego_image.size
-
     # Create a new image to store the extracted secret image
     extracted_image = Image.new('RGB', (width, height))
     extracted_pixels = extracted_image.load()
-
     # Extract the secret image from the stego image using LSB with increased bits
     for y in range(height):
         for x in range(width):
@@ -104,16 +106,8 @@ def extract_image(stego_image, output_cover_path, output_secret_path):
                 # Extract the last 3 bits from the stego image pixel and use them for the extracted image pixel
                 pixel[c] = stego_image.getpixel((x, y))[c] & 7  # Mask with 7 to get last 3 bits
             extracted_pixels[x, y] = tuple(int(p * 255 // 7) for p in pixel)  # Scale and convert to integer
-
     # Save the extracted secret image
     extracted_image.save(output_secret_path)
-
-    # Resize the extracted secret image to its original size
-    extracted_image = extracted_image.resize((output_width, output_height))
-
-    # Save the resized extracted secret image
-    extracted_image.save(output_secret_path)
-
     # Save the cover image
     cover_image = stego_image.copy()
     cover_image.save(output_cover_path)
@@ -197,11 +191,11 @@ def extract():
             output_secret_path = f'static/extracted_secret_{timestamp}.png'
             output_cover_path = f'static/extracted_cover_{timestamp}.png'
 
-            # Memanggil fungsi untuk mengekstraksi gambar rahasia
-            psnr, mse = extract_image(stego_image, output_cover_path, output_secret_path)
+            # Call extract_image function
+            extract_image(stego_image, output_cover_path, output_secret_path)
 
             # Redirect ke halaman utama setelah selesai
-            return render_template('index.html', action='extract', extracted_image_name=os.path.basename(output_secret_path), psnr=psnr, mse=mse)
+            return render_template('index.html', action='extract', extracted_image_name=os.path.basename(output_secret_path))
 
         except Exception as e:
             return f'Error extracting image: {e}'
