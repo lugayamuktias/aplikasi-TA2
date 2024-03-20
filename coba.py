@@ -62,32 +62,27 @@ def embed_image(secret_image, cover_image, output_path):
     width, height = cover_image.size
 
     # Resize the secret image to fit within the cover image without stretching
-    secret_image.thumbnail((width, height))
+    secret_image = secret_image.resize((width, height))
 
     # Convert images to numpy arrays
     secret_pixels = np.array(secret_image)
     cover_pixels = np.array(cover_image)
 
-    # Get dimensions of the secret image after resizing
-    secret_width, secret_height = secret_image.size
-
     # Embed the secret image into the cover image using LSB with increased bits
-    for y in range(secret_height):
-        for x in range(secret_width):
+    for y in range(height):
+        for x in range(width):
             for c in range(3):  # RGB channels
-                # Extract the last 3 bits of the secret image pixel
-                secret_bits = secret_pixels[y, x, c] & 7
-                # Clear the last 3 bits of the cover image pixel
+                # Clear the last 3 LSBs of the cover pixel
                 cover_pixels[y, x, c] &= ~7
-                # Set the last 3 bits of the cover image pixel to the corresponding bits of the secret image
-                cover_pixels[y, x, c] |= secret_bits
+                # Set the last 3 LSBs of the cover pixel to the corresponding bits of the secret image
+                cover_pixels[y, x, c] |= (secret_pixels[y, x, c] >> 5) & 7
 
     # Save the resulting image
     embedded_image = Image.fromarray(cover_pixels)
     embedded_image.save(output_path)
 
     # Calculate PSNR and MSE
-    mse = np.mean((secret_pixels[:secret_height, :secret_width] - cover_pixels[:secret_height, :secret_width]) ** 2)
+    mse = np.mean((secret_pixels - cover_pixels) ** 2)
     psnr = 20 * math.log10(255.0 / math.sqrt(mse))
 
     return psnr, mse
@@ -113,17 +108,23 @@ def extract_image(stego_image, output_cover_path, output_secret_path):
     # Save the extracted secret image
     extracted_image.save(output_secret_path)
 
+    # Resize the extracted secret image to its original size
+    extracted_image = extracted_image.resize((output_width, output_height))
+
+    # Save the resized extracted secret image
+    extracted_image.save(output_secret_path)
+
     # Save the cover image
     cover_image = stego_image.copy()
     cover_image.save(output_cover_path)
 
-    # Calculate PSNR and MSE
-    secret_pixels = np.array(extracted_image)
-    cover_pixels = np.array(stego_image)
-    mse = np.mean((secret_pixels - cover_pixels) ** 2)
-    psnr = 20 * math.log10(255.0 / math.sqrt(mse))
+    # # Calculate PSNR and MSE
+    # secret_pixels = np.array(extracted_image)
+    # cover_pixels = np.array(stego_image)
+    # mse = np.mean((secret_pixels - cover_pixels) ** 2)
+    # psnr = 20 * math.log10(255.0 / math.sqrt(mse))
 
-    return psnr, mse
+    # return psnr, mse
 
 def generate_visual_cbc(image_data):
     img = Image.open(BytesIO(image_data))
