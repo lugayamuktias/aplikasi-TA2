@@ -7,7 +7,7 @@
               <h1>Welcome!</h1>
             </article>
           </section>
-      <section id="Project">
+      <!-- <section id="Project">
         <article class="card">
           <h2>Combined Steganography Website</h2>
           <img
@@ -23,25 +23,27 @@
             website yang saat ini sedang dikembangkan oleh Softy Warena.
           </p>
         </article>
-      </section>
+      </section> -->
       <section id="Project">
         <article class="card">
           <h2>Proposed Method</h2>
-          <img
-            class="featured-image"
-            src="assets\img\WebinarWebsite.png"
+          <img 
+            class="featured-image method"
+            src="{{ url_for('static', filename='assets/images/alur.png') }}"
             alt="Webinar Web" />
           <p>
-            Webinar merupakan akronim dari Web Seminar dan memiliki kata lain
-            yaitu "Sedaring" (Seminar Daring) yang memiliki makna sebuah
-            bentuk kajian ilmu pengetahuan berupa kegiatan seminar yang
-            dilakukan secara daring, menggunakan situs web tertentu ataupun
-            aplikasi yang terhubung dengan internet. Webiinarco merupakan
-            website yang saat ini sedang dikembangkan oleh Softy Warena.
+      Berikut Merupakan Alur dari Penelitian ini ditujukan. Input Citra Rahasia akan mengalami kompresi dengan kompresi citra brotli
+      lalu file terkompresi akan dienkripsi dengan enkripsi AES-CBC dengan kunci berukuran 256-bit.
+      Setelah itu, file citra terenkripsi akan ditanam dengan citra sampul yang dimasukkan dengan ukuran pixel dan resolusi
+      yang lebih besar. Proses ini akan menghasilkan citra stego dan menghasilkan metrik pengukuran PSNR dan MSE yang dihasilkan.
+      Kemudian gambar dilakukan proses ekstraksi dari citra sampul, lalu di proses dekripsi dengan kunci yang sama lalu
+      dilakukan proses dekompresi. Untuk eksplorasi pengujian, proses bisa divariasikan pada dataset gambar dengan kedalaman warna,
+      warna RGB atau Grayscale, skala resolusi yang variatif. Selain dari variasi gambar, pengujian bisa divariasikan pada langkah 
+      pengujian metode mana yang terlebih dahulu dilakukan untuk mengetahui mana ekplorasi pengujian yang menghasilkan PSNR optimal.
           </p>
         </article>
       </section>
-      <article id="Project" class="card">
+      <!-- <article id="Project" class="card">
         <h2>How to Use</h2>
         <img
           class="featured-image"
@@ -54,7 +56,7 @@
           media interaktif yang mengenalkan perangkat - perangkat komputer
           kepada masyarakat.
         </p>
-      </article>
+      </article> -->
     </div>
     <aside>
       <article class="card">
