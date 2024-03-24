@@ -1,0 +1,12 @@
+{% extends "layout.html" %} {% block content %}
+
+    <h1>Image Compression</h1>
+    
+    <h2>Decompress Image</h2>
+    <form action="/decompress" method="post" enctype="multipart/form-data">
+        <label for="input_path">Input Image:</label><br>
+        <input type="file" id="input_path" name="input_path"><br><br>
+        <input type="submit" value="Decompress Image">
+    </form>
+    
+{% endblock %}

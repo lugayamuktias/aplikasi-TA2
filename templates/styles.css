@@ -1,0 +1,70 @@
+/* Style for body */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+}
+
+/* Style for headings */
+h1, h2 {
+    color: #333;
+}
+
+/* Style for forms */
+form {
+    margin-bottom: 20px;
+}
+
+/* Style for labels */
+label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+/* Style for file inputs */
+input[type="file"] {
+    margin-bottom: 10px;
+}
+
+/* Style for image previews */
+#cover_image_preview,
+#secret_image_preview,
+#input_image_preview {
+    margin-top: 10px;
+}
+
+/* Style for image previews and details */
+.preview-container {
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+/* Style for submit buttons */
+input[type="submit"] {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+}
+
+/* Style for image tags */
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin-top: 10px;
+}
+
+/* Style for PSNR and MSE */
+p {
+    margin: 5px 0;
+}
+
+/* Responsive styles */
+@media (max-width: 600px) {
+    form {
+        width: 100%;
+    }
+}

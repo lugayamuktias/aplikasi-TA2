@@ -1,0 +1,288 @@
+<style>
+  .bg-era {
+    background-image: linear-gradient(to right, #224870, #2A4494);
+  }
+  
+  .main-v,
+  .copy-button {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 10px;
+    align-items: center;
+  }
+  .card-v {
+    height: 180px;
+    border-radius: 5px;
+    /* box-shadow: 1px 0px 3px 2px rgba(0, 0, 0, 0.2); */
+    background-color: #fff;
+    padding: 10px 10px;
+    position: relative;
+  }
+  /* .card-v::after {
+    position: absolute;
+    content: "";
+    height: 40px;
+    right: -20px;
+    border-radius: 40px;
+    z-index: 1;
+    top: 70px;
+    background-color: white;
+    width: 40px;
+    box-shadow: -3px 0px 1px rgba(0, 0, 0, 0.2);
+  }
+
+  .card-v::before {
+    position: absolute;
+    content: "";
+    height: 40px;
+    left: -20px;
+    border-radius: 40px;
+    z-index: 1;
+    top: 70px;
+    background-color: white;
+    width: 40px;
+    box-shadow: 2px 0 2px rgba(0, 0, 0, 0.2);
+  }
+
+  .co-img {
+    padding-left: 10px;
+  }
+ 
+
+  .vertical-v {
+    border-left: 5px dotted black;
+    height: 100px;
+    position: absolute;
+    left: 40%;
+  }
+  */
+  .co-img img {
+    width: 100px;
+  }
+  .content-v h1 {
+    font-size: 35px;
+    color: #fff;
+    font-weight: bolder;
+  }
+
+  .content-v h1 span {
+    font-size: 18px;
+  }
+  .content-v h2 {
+    font-size: 18px;
+    color: #fff;
+    text-transform: uppercase;
+    font-weight: bolder;
+  }
+
+  .content-v p {
+    font-size: 16px;
+    color: #fff;
+    font-weight: bolder;
+  }
+
+  /* ---------------------------------- */
+  .ticket {
+	 width: 100%;
+	 height: 160px;
+	 transition: all 0.4s ease;
+	 position: absolute;
+	 top: 50%;
+	 left: 50%;
+	 transform: translate(-50%, -50%);
+   box-shadow: 1px 0px 3px 2px rgba(0, 0, 0, 0.2);
+}
+ .ornament {
+	 background: #fbad18;
+	 width: 65%;
+	 height: inherit;
+	 position: absolute;
+	 border: 1px solid #ffa726;
+	 border-right: none;
+	 transition: all 0.4s ease;
+	 z-index: 1;
+}
+ .ornament__cut {
+	 background: #fff;
+	 width: 22px;
+	 height: 12.1px;
+	 position: absolute;
+	 left: 10%;
+	 z-index: 5;
+}
+ .ornament__cut--1 {
+	 top: -1%;
+	 border-radius: 0 0 100px 100px;
+}
+ .ornament__cut--2 {
+	 bottom: -1%;
+	 border-radius: 100px 100px 0 0;
+}
+ .ornament__tail {
+	 background: #f57c00;
+	 width: 12px;
+	 height: inherit;
+	 position: absolute;
+	 top: 0;
+	 left: 0;
+}
+ .illustration {
+	 background: white;
+	 width: 35%;
+	 height: inherit;
+	 position: absolute;
+	 right: 0;
+	 transition: all 0.4s ease;
+	 border: 1px inset rgba(0, 0, 0, 0.08);
+	 border-left: none;
+	 border-radius: 0 4px 4px 0;
+	 overflow: hidden;
+}
+ .new-label {
+	 background: #ffa726;
+	 width: 50px;
+	 text-align: center;
+	 padding: 0.2em;
+	 border-radius: 8px;
+	 position: absolute;
+	 top: 2%;
+	 right: 2%;
+	 color: white;
+	 font-size: 13px;
+}
+ .spikes {
+	 display: flex;
+	 flex-direction: column;
+	 justify-content: flex-start;
+	 align-items: flex-start;
+	 flex-wrap: nowrap;
+	 position: absolute;
+	 top: 0;
+	 left: 0;
+	 width: 10px;
+	 margin-left: -12px;
+}
+ .spike {
+	 background: #ffa726;
+	 width: 20px;
+	 height: 20px;
+	 transform: rotate(45deg);
+}
+ .content {
+	 width: 80%;
+	 position: absolute;
+	 top: 50%;
+	 left: 55%;
+	 transform: translate(-50%, -50%);
+}
+ .content p {
+	 font-size: 16px;
+	 font-weight: bold;
+	 margin-top: 0;
+	 margin-bottom: 8px;
+}
+ .content .link-join {
+	 background: white;
+	 border-radius: 4px;
+	 padding: 0.3em 1em;
+	 font-size: 12px;
+	 font-weight: bold;
+	 color: #ffa726;
+	 text-decoration: none;
+}
+ .content .link-join:focus, .content .link-join:active, .content .link-join:hover {
+	 color: #ffa726;
+	 text-decoration: none;
+}
+
+ .load {
+	 border: 1px solid #ecf0f1;
+	 padding: 5px;
+	 position: absolute;
+	 top: 50%;
+	 left: 50%;
+	 transform-origin: center center;
+	 transform: translate(-50%, -50%) rotate(135deg);
+	 width: 50px;
+	/*change these sizes to fit into your project*/
+	 height: 50px;
+}
+ .load hr {
+	 border: 0;
+	 margin: 0;
+	 width: 40%;
+	 height: 40%;
+	 position: absolute;
+	 border-radius: 50%;
+	 animation: spin 2s ease infinite;
+}
+ .load :first-child {
+	 background: #19a68c;
+	 animation-delay: -1.5s;
+}
+ .load :nth-child(2) {
+	 background: #f63d3a;
+	 animation-delay: -1s;
+}
+ .load :nth-child(3) {
+	 background: #fda543;
+	 animation-delay: -0.5s;
+}
+ .load :last-child {
+	 background: #193b48;
+}
+ @keyframes spin {
+	 0%, 100% {
+		 transform: translateX(200%);
+	}
+	 25% {
+		 transform: translateY(200%);
+	}
+	 50% {
+		 transform: translateX(0);
+	}
+	 75% {
+		 transform: translateY(0);
+	}
+}
+
+.moveall, .removeall, .move, .remove {
+	 border: 1px solid #ccc !important;
+}
+ .moveall:hover, .removeall:hover, .move:hover, .remove:hover {
+	 background: #efefef;
+}
+ /* .moveall::after {
+	 content: attr(title);
+}
+ .move::after {
+	 content: attr(title);
+}
+ .removeall::after {
+	 content: attr(title);
+}
+ .remove::after {
+	 content: attr(title);
+} */
+ .form-control option {
+	 padding: 10px;
+	 border-bottom: 1px solid #efefef;
+}
+ 
+.box1 select {	
+	height: 250px!important;
+}
+
+.box2 select {	
+	height: 250px!important;
+}
+
+.text-right {
+	text-align: right;
+}
+ 
+.metismenu > li {
+    margin-right: 200px; /* Ubah sesuai dengan kebutuhan margin yang diinginkan */
+}
+
+</style>

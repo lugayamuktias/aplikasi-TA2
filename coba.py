@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory, jsonify, send_file
+from flask import Flask, session, request, render_template, request, redirect, url_for, send_from_directory, jsonify, send_file
 from PIL import Image, ImageDraw, ImageFont
 import os
 import numpy as np
@@ -11,7 +11,7 @@ from Crypto.Random import get_random_bytes
 import math
 from io import BytesIO
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
 
 # Generate a random key and IV
 key = get_random_bytes(32)  # 256-bit key
@@ -133,9 +133,25 @@ def generate_visual_cbc(image_data):
 
     return visual_cbc_img
 
-@app.route('/')
+class MyClass:
+    def __init__(self, request):
+        self.session = session
+        self.request = request
+        self.data = {
+            'baseURL': request.base_url.rsplit('/', 1)[0],  # Mendapatkan base URL
+        }
+
+@app.route('/', methods=['GET'])
 def index():
     return render_template('index.html', action='embed')
+
+@app.route('/home', methods=['GET'])
+def home():
+    return render_template('index.html', action='embed')
+
+@app.route('/embed', methods=['GET'])
+def stegano():
+    return render_template('embed.html', action='embed')
 
 @app.route('/embed', methods=['POST'])
 def embed():
@@ -165,10 +181,14 @@ def embed():
             psnr, mse = embed_image(secret_image, Image.open(cover_image_path), output_path)
 
             # Mengirimkan nama file gambar yang dihasilkan dan nilai PSNR dan MSE ke template
-            return render_template('index.html', action='embed', output_image_name=os.path.basename(output_path), psnr=psnr, mse=mse)
+            return render_template('embed.html', action='embed', output_image_name=os.path.basename(output_path), psnr=psnr, mse=mse)
 
         except Exception as e:
             return f'Error embedding image: {e}'
+
+@app.route('/extract', methods=['GET'])
+def destegano():
+    return render_template('extract.html', action='extract')
 
 @app.route('/extract', methods=['POST'])
 def extract():
@@ -195,10 +215,18 @@ def extract():
             extract_image(stego_image, output_cover_path, output_secret_path)
 
             # Redirect ke halaman utama setelah selesai
-            return render_template('index.html', action='extract', extracted_image_name=os.path.basename(output_secret_path))
+            return render_template('embed.html', action='extract', extracted_image_name=os.path.basename(output_secret_path))
 
         except Exception as e:
             return f'Error extracting image: {e}'
+
+@app.route('/encrypt', methods=['GET'])
+def encryption():
+    return render_template('encrypted.html', action='encrypt')
+
+@app.route('/decrypt', methods=['GET'])
+def decryption():
+    return render_template('decrypted.html', action='decrypt')
 
 @app.route('/encrypt', methods=['POST'])
 def encrypt():
@@ -239,6 +267,14 @@ def decrypt(filename):
 @app.route('/show/<filename>')
 def show(filename):
     return send_file(os.path.join(static_folder, filename), mimetype='image/png')
+
+@app.route('/compress', methods=['GET'])
+def compression():
+    return render_template('compress.html', action='compress')
+
+@app.route('/decompress', methods=['GET'])
+def decompression():
+    return render_template('decompress.html', action='compress')
 
 if __name__ == '__main__':
     app.run(debug=True)

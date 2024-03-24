@@ -1,0 +1,12 @@
+{% extends "layout.html" %} {% block content %}
+
+    <h1>Image Encryption AES-CBC</h1>
+
+    <h2>Encrypt Image</h2>
+    <form action="/encrypt" method="post" enctype="multipart/form-data">
+        <label for="file">Input Image:</label><br>
+        <input type="file" id="file" name="file" accept="image/*"><br><br>
+        <input type="submit" value="Encrypt Image">
+    </form>
+    
+{% endblock %}

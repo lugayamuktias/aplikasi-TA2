@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html class="loading" lang="en" data-textdirection="ltr">
+  <meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="keywords" content="admin, dashboard" />
+	<meta name="author" content="DexignZone" />
+	<meta name="robots" content="index, follow" />
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="tixia : tixia School Admission Admin  Bootstrap 5 Template" />
+	<meta property="og:title" content="tixia : tixia School Admission Admin  Bootstrap 5 Template" />
+	<meta property="og:description" content="tixia : tixia School Admission Admin  Bootstrap 5 Template" />
+	<meta property="og:image" content="https://tixia.dexignzone.com/xhtml/social-image.png" />
+	<meta name="format-detection" content="telephone=no">
+  <title>Image Steganography</title>
+
+    {% include "layout/css.html" %}
+    {% include "layout/style.html" %}
+
+  </head>
+
+	<body id="bodies" data-typography="poppins" data-theme-version="light" data-layout="horizontal" data-nav-headerbg="color_2" data-headerbg="color_2" data-sidebar-style="modern" data-sibebarbg="color_1" data-sidebar-position="fixed" data-header-position="fixed" data-container="wide" direction="ltr" data-primary="color_2">
+    <div id="main-wrapper" class="show">
+      {% include "layout/navheader.html" %}
+      {% include "layout/header.html" %}
+      {% include "layout/menu.html" %}
+      <div class="content-body" style="min-height: 890px;padding-top: 12rem;">
+        {% block content %} {% endblock %}
+      </div>
+      {% include "layout/footer.html" %}
+
+    </div>
+
+    {% include "layout/scripts.html" %}
+  </body>
+  <!-- END: Body-->
+</html>
