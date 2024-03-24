@@ -2,11 +2,15 @@
 
     <h1>Image Compression</h1>
 
-    <h2>Compress Image</h2>
-    <form action="/compress" method="post" enctype="multipart/form-data">
-        <label for="input_path">Input Image:</label><br>
-        <input type="file" id="input_path" name="input_path"><br><br>
-        <input type="submit" value="Compress Image">
-    </form>
+    <div class="card">
+        <div class="card-body">
+            <h2>Compress Image</h2>
+            <form action="/compress" method="post" enctype="multipart/form-data">
+                <label for="input_path">Input Image:</label><br>
+                <input type="file" id="input_path" name="input_path"><br><br>
+                <input type="submit" value="Compress Image">
+            </form>
+        </div>
+    </div>
     
 {% endblock %}

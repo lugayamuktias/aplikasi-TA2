@@ -215,7 +215,7 @@ def extract():
             extract_image(stego_image, output_cover_path, output_secret_path)
 
             # Redirect ke halaman utama setelah selesai
-            return render_template('embed.html', action='extract', extracted_image_name=os.path.basename(output_secret_path))
+            return render_template('extract.html', action='extract', extracted_image_name=os.path.basename(output_secret_path))
 
         except Exception as e:
             return f'Error extracting image: {e}'

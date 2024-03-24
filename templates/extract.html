@@ -1,21 +1,26 @@
 {% extends "layout.html" %} {% block content %}
     <h1>Image Steganography</h1>
 
-    <h2>Extract Image</h2>
-    <form action="/extract" method="post" enctype="multipart/form-data">
-        <label for="stego_image">Stego Image:</label><br>
-        <input type="file" id="stego_image" name="stego_image"><br><br>
-        <input type="submit" value="Extract Image">
-    </form>
-
-    <!-- Menampilkan file preview untuk gambar hasil ekstraksi -->
-    {% if extracted_image_name %}
-    <h2>Extracted Image</h2>
-    <img src="{{ url_for('static', filename=extracted_image_name) }}" alt="Extracted Image">
-    <!-- <p>PSNR: {{ psnr }}</p>
-    <p>MSE: {{ mse }}</p> -->
+    <div class="card">
+        <div class="card-body">
+            <h2>Extract Image</h2>
+            <form action="/extract" method="post" enctype="multipart/form-data">
+                <label for="stego_image">Stego Image:</label><br>
+                <input type="file" id="stego_image" name="stego_image"><br><br>
+                <div id="stego_image_preview"></div><br>
+                <input type="submit" value="Extract Image">
+            </form>
     
-    {% endif %}
+            <!-- Menampilkan file preview untuk gambar hasil ekstraksi -->
+            {% if extracted_image_name %}
+            <h2>Extracted Image</h2>
+            <img src="{{ url_for('static', filename=extracted_image_name) }}" alt="Extracted Image">
+            <!-- <p>PSNR: {{ psnr }}</p>
+            <p>MSE: {{ mse }}</p> -->
+            {% endif %}
+        </div>
+    </div>
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function() {
@@ -31,7 +36,7 @@
                         img.onload = function() {
                             var fileSize = input.files[0].size;
                             var resolution = this.width + "x" + this.height;
-                            var preview = '<img src="' + e.target.result + '" style="max-width:300px; max-height:300px;"><br>';
+                            var preview = '<img src="' + e.target.result + '" class="preview-image"><br>';
                             preview += 'Size: ' + fileSize + ' bytes<br>';
                             preview += 'Resolution: ' + resolution + '<br>';
                             $(previewElement).html(preview);
@@ -42,18 +47,9 @@
                 }
             }
 
-            // Show preview for cover image
-            $('#cover_image').change(function() {
-                showImagePreview(this, '#cover_image_preview');
-            });
-
-            // Show preview for secret image
-            $('#secret_image').change(function() {
-                showImagePreview(this, '#secret_image_preview');
-            });
-
-            $('#input_path').change(function() {
-                showImagePreview(this, '#input_image_preview');
+            // Show preview for stego image
+            $('#stego_image').change(function() {
+                showImagePreview(this, '#stego_image_preview');
             });
         });
     </script>

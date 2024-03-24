@@ -1,24 +1,28 @@
 {% extends "layout.html" %} {% block content %}
     <h1>Image Steganography</h1>
 
-    <h2>Embed Image</h2>
-    <form action="/embed" method="post" enctype="multipart/form-data">
-        <label for="cover_image">Cover Image:</label><br>
-        <input type="file" id="cover_image" name="cover_image"><br>
-        <div id="cover_image_preview"></div><br>
-        <label for="secret_image">Secret Image:</label><br>
-        <input type="file" id="secret_image" name="secret_image"><br>
-        <div id="secret_image_preview"></div><br>
-        <input type="submit" value="Embed Image">
-    </form>
-
-    <!-- Menampilkan gambar yang dihasilkan -->
-    {% if output_image_name %}
-        <h2>Output Image</h2>
-        <img src="{{ url_for('static', filename=output_image_name) }}" alt="Output Image">
-        <p>PSNR: {{ psnr }}</p>
-        <p>MSE: {{ mse }}</p>
-    {% endif %}
+    <div class="card">
+        <div class="card-body">
+            <h2>Embed Image</h2>
+            <form action="/embed" method="post" enctype="multipart/form-data">
+                <label for="cover_image">Cover Image:</label><br>
+                <input type="file" id="cover_image" name="cover_image"><br>
+                <div id="cover_image_preview"></div><br>
+                <label for="secret_image">Secret Image:</label><br>
+                <input type="file" id="secret_image" name="secret_image"><br>
+                <div id="secret_image_preview"></div><br>
+                <input type="submit" value="Embed Image">
+            </form>
+    
+            <!-- Menampilkan gambar yang dihasilkan -->
+            {% if output_image_name %}
+                <h2>Output Image</h2>
+                <img src="{{ url_for('static', filename=output_image_name) }}" alt="Output Image">
+                <p>PSNR: {{ psnr }}</p>
+                <p>MSE: {{ mse }}</p>
+            {% endif %}
+        </div>
+    </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
