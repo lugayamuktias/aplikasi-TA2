@@ -32,6 +32,12 @@
 		},
 		{
 			"path": "../TA2/BasicImageEncryptionCBC-master/BasicImageEncryptionCBC-master"
+		},
+		{
+			"path": "../../Semester 6/Latihan Pemrograman Web"
+		},
+		{
+			"path": "../../Semester 6/Projek Web Dasar"
 		}
 	],
 	"settings": {},

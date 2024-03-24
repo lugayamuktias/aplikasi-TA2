@@ -1,110 +1,81 @@
 {% extends "layout.html" %} {% block content %}
 
-    <h1>Image Steganography</h1>
-
-    <h2>Embed Image</h2>
-    <form action="/embed" method="post" enctype="multipart/form-data">
-        <label for="cover_image">Cover Image:</label><br>
-        <input type="file" id="cover_image" name="cover_image"><br>
-        <div id="cover_image_preview"></div><br>
-        <label for="secret_image">Secret Image:</label><br>
-        <input type="file" id="secret_image" name="secret_image"><br>
-        <div id="secret_image_preview"></div><br>
-        <input type="submit" value="Embed Image">
-    </form>
-
-    <!-- Menampilkan gambar yang dihasilkan -->
-    {% if output_image_name %}
-        <h2>Output Image</h2>
-        <img src="{{ url_for('static', filename=output_image_name) }}" alt="Output Image">
-        <p>PSNR: {{ psnr }}</p>
-        <p>MSE: {{ mse }}</p>
-    {% endif %}
-
-    <h2>Extract Image</h2>
-    <form action="/embed" method="post" enctype="multipart/form-data">
-        <label for="stego_image">Stego Image:</label><br>
-        <input type="file" id="stego_image" name="stego_image"><br><br>
-        <input type="submit" value="Extract Image">
-    </form>
-
-    <!-- Menampilkan file preview untuk gambar hasil ekstraksi -->
-    {% if extracted_image_name %}
-    <h2>Extracted Image</h2>
-    <img src="{{ url_for('static', filename=extracted_image_name) }}" alt="Extracted Image">
-    <p>PSNR: {{ psnr }}</p>
-    <p>MSE: {{ mse }}</p>
-    {% endif %}
-
-    <h2>Compress Image</h2>
-    <form action="/compress" method="post" enctype="multipart/form-data">
-        <label for="input_path">Input Image:</label><br>
-        <input type="file" id="input_path" name="input_path"><br><br>
-        <input type="submit" value="Compress Image">
-    </form>
-    
-    <h2>Decompress Image</h2>
-    <form action="/decompress" method="post" enctype="multipart/form-data">
-        <label for="input_path">Input Image:</label><br>
-        <input type="file" id="input_path" name="input_path"><br><br>
-        <input type="submit" value="Decompress Image">
-    </form>
-    
-    <h2>Encrypt Image</h2>
-    <form action="/encrypt" method="post" enctype="multipart/form-data">
-        <label for="file">Input Image:</label><br>
-        <input type="file" id="file" name="file" accept="image/*"><br><br>
-        <input type="submit" value="Encrypt Image">
-    </form>
-    
-    <h2>Decrypt Image</h2>
-    <form action="/decrypt" method="post" enctype="multipart/form-data">
-        <label for="input_path">Input Image:</label><br>
-        <input type="file" id="input_path" name="input_path"><br><br>
-        <label for="key">Decryption Key:</label><br>
-        <input type="text" id="key" name="key"><br><br>
-        <input type="submit" value="Decrypt Image">
-    </form>
-    
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            // Function to display image preview, size, and resolution
-            function showImagePreview(input, previewElement) {
-                if (input.files && input.files[0]) {
-                    var reader = new FileReader();
-
-                    reader.onload = function(e) {
-                        var img = new Image();
-                        img.src = e.target.result;
-
-                        img.onload = function() {
-                            var fileSize = input.files[0].size;
-                            var resolution = this.width + "x" + this.height;
-                            var preview = '<img src="' + e.target.result + '" style="max-width:300px; max-height:300px;"><br>';
-                            preview += 'Size: ' + fileSize + ' bytes<br>';
-                            preview += 'Resolution: ' + resolution + '<br>';
-                            $(previewElement).html(preview);
-                        };
-                    };
-
-                    reader.readAsDataURL(input.files[0]);
-                }
-            }
-
-            // Show preview for cover image
-            $('#cover_image').change(function() {
-                showImagePreview(this, '#cover_image_preview');
-            });
-
-            // Show preview for secret image
-            $('#secret_image').change(function() {
-                showImagePreview(this, '#secret_image_preview');
-            });
-
-            $('#input_path').change(function() {
-                showImagePreview(this, '#input_image_preview');
-            });
-        });
-    </script>
+<main>
+    <div id="content">
+        <section id="Welcomes">
+            <article class="card">
+              <h1>Welcome!</h1>
+            </article>
+          </section>
+      <section id="Project">
+        <article class="card">
+          <h2>Combined Steganography Website</h2>
+          <img
+            class="featured-image"
+            src="assets\img\WebinarWebsite.png"
+            alt="Webinar Web" />
+          <p>
+            Webinar merupakan akronim dari Web Seminar dan memiliki kata lain
+            yaitu "Sedaring" (Seminar Daring) yang memiliki makna sebuah
+            bentuk kajian ilmu pengetahuan berupa kegiatan seminar yang
+            dilakukan secara daring, menggunakan situs web tertentu ataupun
+            aplikasi yang terhubung dengan internet. Webiinarco merupakan
+            website yang saat ini sedang dikembangkan oleh Softy Warena.
+          </p>
+        </article>
+      </section>
+      <section id="Project">
+        <article class="card">
+          <h2>Proposed Method</h2>
+          <img
+            class="featured-image"
+            src="assets\img\WebinarWebsite.png"
+            alt="Webinar Web" />
+          <p>
+            Webinar merupakan akronim dari Web Seminar dan memiliki kata lain
+            yaitu "Sedaring" (Seminar Daring) yang memiliki makna sebuah
+            bentuk kajian ilmu pengetahuan berupa kegiatan seminar yang
+            dilakukan secara daring, menggunakan situs web tertentu ataupun
+            aplikasi yang terhubung dengan internet. Webiinarco merupakan
+            website yang saat ini sedang dikembangkan oleh Softy Warena.
+          </p>
+        </article>
+      </section>
+      <article id="Project" class="card">
+        <h2>How to Use</h2>
+        <img
+          class="featured-image"
+          src="assets\img\AplikasiKomputer.png"
+          alt="Aplikasi Pengenalan Perangkat Komputer" />
+        <p>
+          Komputer merupakan sebuah perangkat yang terdiri dari komponen -
+          komponen yang kompleks. Baik itu Komponen Hardware ataupun Software.
+          Pada kesempatan ini, Softy Warena mengembangkan sebuah aplikasi
+          media interaktif yang mengenalkan perangkat - perangkat komputer
+          kepada masyarakat.
+        </p>
+      </article>
+    </div>
+    <aside>
+      <article class="card">
+        <header>
+          <h2>Lugaya Mukti Arwasaputra</h2>
+          <figure>
+            <img
+            src="{{ url_for('static', filename='assets/images/lugaya_formal.JPG') }}"
+              class="profile-image"
+              alt="Lugaya" />
+            <figcaption>Foto Profil</figcaption>
+          </figure>
+        </header>
+        <section>
+          <h2>Nama</h2>
+          <h5>Lugaya Mukti Arwasaputra</h5>
+          <h2>Kampus</h2>
+          <h5>Universitas Jenderal Achmad Yani</h5>
+        </section>
+      </article>
+    </aside>
+    <script src="Javascript.js"></script>
+  </main>
 {% endblock %}

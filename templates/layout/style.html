@@ -1,11 +1,12 @@
 <style>
   .bg-era {
-    background-image: linear-gradient(to right, #F91A40, #ed2a41);
+    background-image: linear-gradient(to right, #F91A40, #443c68);
   }
   
   h1 {
-            text-align: center;
-        }
+    text-align: center;
+	color: #443c68;
+    }
 
   .main-v,
   .copy-button {
@@ -288,5 +289,215 @@
 .metismenu > li {
     margin-right: 200px; /* Ubah sesuai dengan kebutuhan margin yang diinginkan */
 }
+
+@import url("https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&display=swap");
+
+* {
+  box-sizing: border-box;
+}
+
+/* .header {
+  padding: 60px;
+  background-color: #635985;
+  text-align: center;
+  font-size: 20px;
+  color: white;
+} */
+/* nav ul {
+  padding-inline: 4rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+} */
+/* nav li {
+  list-style-type: none;
+  margin-right: 20px;
+}
+nav {
+  background-color: #443c68;
+  padding: 5px;
+  position: sticky;
+  top: 0;
+  text-align: center;
+} */
+/* nav a {
+  font-size: 18px;
+  font-weight: 400;
+  text-decoration: none;
+  color: white;
+} */
+
+/* nav a:hover {
+  font-weight: bold;
+} */
+/* 
+header {
+  display: inline;
+} */
+
+body {
+  font-family: "Quicksand", sans-serif;
+  margin: 0;
+  padding: 0;
+  justify-content: center;
+  align-items: center;
+}
+
+main {
+  width: auto;
+  padding: 20px;
+  overflow: auto;
+  text-align: justify;
+
+  display: flex;
+  gap: 1.5rem;
+}
+
+aside {
+  flex: 1;
+  text-align: center;
+}
+
+aside section {
+  justify-content: center;
+}
+.profile-image {
+  width: 200px;
+}
+
+.featured-image {
+  width: 100%;
+  max-height: 300px;
+
+  object-fit: contain;
+  object-position: center;
+}
+.card {
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+  border-radius: 5px;
+  padding: 20px;
+  margin-top: 20px;
+}
+#content {
+  flex: 5;
+
+  display: flex;
+  flex-flow: column nowrap;
+  gap: 1rem 2rem;
+}
+
+footer {
+  padding: 70px 0;
+  background-color: #18122b;
+  text-align: center;
+  font-size: 20px;
+  color: white;
+}
+
+h2 {
+  color: #443c68;
+}
+h3 {
+  color: #443c68;
+}
+
+@media screen and (max-width: 1000px) {
+  #content,
+  aside {
+    width: 100%;
+    padding: 0;
+  }
+}
+
+@media screen and (max-width: 1200px) {
+  main {
+    flex-flow: column nowrap;
+  }
+  main aside {
+    align-self: center;
+  }
+}
+@media screen and (max-width: 768px) {
+  nav ul {
+    justify-content: center;
+  }
+
+  main aside {
+    align-self: center;
+  }
+  nav .navbar .links li .sub-menu {
+    position: sticky;
+    top: 10px;
+    right: 0px;
+    line-height: 40px;
+    background: #F91A40;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    border-radius: 0 0 4px 4px;
+    display: none;
+    z-index: 0;
+  }
+}
+
+nav .navbar .links li {
+  position: sticky;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  list-style: none;
+  padding: 0 5px;
+}
+nav .navbar .links li a {
+  position: sticky;
+  height: 100%;
+  text-decoration: none;
+  white-space: nowrap;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 500;
+}
+nav .navbar .links li a:hover {
+  font-weight: bold;
+}
+.links li:hover .contact-arrow {
+  transform: rotate(180deg);
+}
+nav .navbar .links li .arrow {
+  text-align: center;
+  display: inline-block;
+  color: #fff;
+  transition: all 0.3s ease;
+}
+nav .navbar .links li .sub-menu {
+  position: sticky;
+  top: 15px;
+  line-height: 40px;
+  background: #F91A40;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  border-radius: 0 0 4px 4px;
+  display: none;
+  z-index: 0;
+}
+nav .navbar .links li:hover .contact-sub-menu {
+  display: block;
+  position: absolute;
+}
+
+.navbar .links li .sub-menu li {
+  padding: 0 22px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.navbar .links li .sub-menu a {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 500;
+}
+nav .navbar .nav-links {
+  line-height: 70px;
+  height: 100%;
+}
+nav .navbar .links {
+  display: flex;
+}
+
 
 </style>
