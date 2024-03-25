@@ -22,35 +22,75 @@
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tiff.js/1.6.7/tiff.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tiff.js"></script>
     <script>
         $(document).ready(function() {
             // Function to display image preview, size, and resolution
             function showImagePreview(input, previewElement) {
                 if (input.files && input.files[0]) {
                     var reader = new FileReader();
-
+                    var fileType = input.files[0].type;
+                    var fileName = input.files[0].name;
+                    var fileSize = input.files[0].size;
+                    var resolution;
+    
                     reader.onload = function(e) {
-                        var img = new Image();
-                        img.src = e.target.result;
-
-                        img.onload = function() {
-                            var fileSize = input.files[0].size;
-                            var resolution = this.width + "x" + this.height;
-                            var preview = '<img src="' + e.target.result + '" class="preview-image"><br>';
+                        if (fileType === 'image/svg+xml') {
+                            resolution = "Not applicable for SVG";
+                            var preview = '<object data="' + e.target.result + '" type="image/svg+xml" style="max-width:300px; max-height:300px;"></object><br>';
+                            preview += '<br>' + 'File Name: ' + fileName + '<br>';
                             preview += 'Size: ' + fileSize + ' bytes<br>';
                             preview += 'Resolution: ' + resolution + '<br>';
                             $(previewElement).html(preview);
-                        };
+                        } else if (fileType === 'image/tiff' || fileType === 'image/bmp') {
+                            // Load TIFF or BMP file using tiff.js
+                            Tiff.initialize({
+                                TOTAL_MEMORY: 16777216 * 10
+                            });
+                            var tiff = new Tiff({buffer: e.target.result});
+                            var canvas = tiff.toCanvas();
+                            $(previewElement).empty().append(canvas);
+    
+                            resolution = tiff.width() + "x" + tiff.height();
+                            var preview = '<br>' + 'File Name: ' + fileName + '<br>';
+                            preview += 'Size: ' + fileSize + ' bytes<br>';
+                            preview += 'Resolution: ' + resolution + '<br>';
+                            $(previewElement).append(preview);
+                        } else if (fileType === 'image/png' || fileType === 'image/jpeg' || fileType === 'image/jpg') {
+                            var img = new Image();
+                            img.onload = function() {
+                                resolution = this.width + "x" + this.height;
+                                var preview = '<img src="' + e.target.result + '" style="max-width:300px; max-height:300px;"><br>';
+                                preview += '<br>' + 'File Name: ' + fileName + '<br>';
+                                preview += 'Size: ' + fileSize + ' bytes<br>';
+                                preview += 'Resolution: ' + resolution + '<br>';
+                                $(previewElement).html(preview);
+                            };
+                            img.src = e.target.result;
+                        } else {
+                            resolution = "Not applicable";
+                            var preview = '<br>' + 'File Name: ' + fileName + '<br>';
+                            preview += 'Size: ' + fileSize + ' bytes<br>';
+                            preview += 'Resolution: ' + resolution + '<br>';
+                            $(previewElement).html(preview);
+                        }
                     };
-
-                    reader.readAsDataURL(input.files[0]);
+    
+                    // Choose appropriate method based on file type
+                    if (fileType === 'image/tiff' || fileType === 'image/bmp') {
+                        reader.readAsArrayBuffer(input.files[0]);
+                    } else {
+                        reader.readAsDataURL(input.files[0]);
+                    }
                 }
             }
-
+    
             // Show preview for stego image
             $('#stego_image').change(function() {
                 showImagePreview(this, '#stego_image_preview');
             });
         });
     </script>
+    
 {% endblock %}
