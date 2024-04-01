@@ -1,16 +1,42 @@
 {% extends "layout.html" %} {% block content %}
 
-    <h1>Image Compression</h1>
+<h1>Image Compression</h1>
 
-    <div class="card">
-        <div class="card-body">
-            <h2>Compress Image</h2>
-            <form action="/compress" method="post" enctype="multipart/form-data">
-                <label for="input_path">Input Image:</label><br>
-                <input type="file" id="input_path" name="input_path"><br><br>
-                <input type="submit" value="Compress Image">
-            </form>
-        </div>
+<div class="card">
+    <div class="card-body">
+        <h2>Compress Image</h2>
+        <form action="/compress" method="post" enctype="multipart/form-data">
+            <label for="input_path">Input Image:</label><br>
+            <input type="file" id="input_path" name="file"><br><br>
+            <input type="submit" value="Compress Image">
+        </form>
     </div>
-    
+</div>
+
+<div class="card" id="outputCard" style="display: none;">
+    <div class="card-body">
+        <h2>Compressed Image</h2>
+        <div id="outputPreview"></div>
+        <br>
+        <p id="outputMessage"></p>
+    </div>
+</div>
+
+<script>
+    function previewImage(event, previewId) {
+        var preview = document.getElementById(previewId);
+        while (preview.firstChild) {
+            preview.removeChild(preview.firstChild);
+        }
+
+        var file = event.target.files[0];
+        var reader = new FileReader();
+        reader.onload = function(event) {
+            var img = document.createElement('img');
+            img.src = event.target.result;
+            preview.appendChild(img);
+        }
+        reader.readAsDataURL(file);
+    }
+</script>
 {% endblock %}

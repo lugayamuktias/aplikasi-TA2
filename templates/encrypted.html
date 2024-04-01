@@ -4,11 +4,13 @@
 
     <div class="card">
         <div class="card-body">
-            <h2>Encrypt Image</h2>
+            <h1>Image Encryption</h1>
             <form action="/encrypt" method="post" enctype="multipart/form-data">
-                <label for="file">Input Image:</label><br>
-                <input type="file" id="file" name="file" accept="image/*"><br><br>
-                <input type="submit" value="Encrypt Image">
+                <label for="image">Select Image:</label><br>
+                <input type="file" id="image" name="image" accept="image/*"><br><br>
+                <label for="key">Enter Key:</label><br>
+                <input type="text" id="key" name="key"><br><br>
+                <button type="submit">Encrypt Image</button>
             </form>
         </div>
     </div>    

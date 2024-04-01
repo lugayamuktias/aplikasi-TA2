@@ -1,6 +1,7 @@
 from flask import Flask, session, request, render_template, request, redirect, url_for, send_from_directory, jsonify, send_file
 from PIL import Image, ImageDraw, ImageFont
 import os
+import io
 import numpy as np
 from werkzeug.utils import secure_filename
 from datetime import datetime
@@ -13,24 +14,55 @@ from io import BytesIO
 
 app = Flask(__name__, static_folder='static')
 
-# Generate a random key and IV
-key = get_random_bytes(32)  # 256-bit key
-iv = get_random_bytes(16)    # 128-bit IV
-
-# Path to the static folder
-static_folder = os.path.join(app.root_path, 'encrypted')
-
-def encrypt_image(input_image_data, key, iv):
+# Fungsi untuk enkripsi AES-CBC
+def encrypt_AES_CBC(plaintext, key):
+    iv = get_random_bytes(16)  # Inisialisasi vektor inisialisasi
     cipher = AES.new(key, AES.MODE_CBC, iv)
-    ciphertext = cipher.encrypt(pad(input_image_data, AES.block_size))
+    ciphertext = cipher.encrypt(pad(plaintext, AES.block_size))
+    return iv, ciphertext
 
-    return ciphertext
+# Fungsi untuk membaca gambar dari file
+def read_image(filename):
+    with open(filename, 'rb') as f:
+        return f.read()
 
-def decrypt_image(ciphertext, key, iv):
+# Fungsi untuk menulis gambar ke file
+def write_image(filename, data):
+    with open(filename, 'wb') as f:
+        f.write(data)
+
+# Fungsi untuk melakukan enkripsi pada gambar
+def encrypt_image(image_data, key):
+    # Enkripsi data gambar
+    iv = get_random_bytes(16)
     cipher = AES.new(key, AES.MODE_CBC, iv)
-    plaintext = unpad(cipher.decrypt(ciphertext), AES.block_size)
+    # Padding data gambar agar ukurannya menjadi kelipatan block size AES
+    padded_data = pad(image_data, AES.block_size)
+    # Melakukan enkripsi
+    ciphertext = cipher.encrypt(padded_data)
+    return iv + ciphertext
 
-    return plaintext
+# Fungsi untuk dekripsi AES-CBC
+def decrypt_AES_CBC(ciphertext, key, iv):
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    decrypted_data = cipher.decrypt(ciphertext)
+    return unpad(decrypted_data, AES.block_size)
+
+# Fungsi untuk membaca gambar terenkripsi dari file
+def read_encrypted_image(filename):
+    with open(filename, 'rb') as f:
+        return f.read()
+
+# Fungsi untuk menulis gambar terdekripsi ke file
+def write_image(filename, data):
+    with open(filename, 'wb') as f:
+        f.write(data)
+
+# Fungsi untuk melakukan dekripsi pada gambar
+def decrypt_image(encrypted_data, key, iv):
+    # Melakukan dekripsi pada gambar
+    decrypted_image_data = decrypt_AES_CBC(encrypted_data[AES.block_size:], key, iv)
+    return decrypted_image_data
 
 # Fungsi untuk mendekompresi gambar menggunakan Brotli
 def decompress_image(input_path, output_path):
@@ -42,10 +74,10 @@ def decompress_image(input_path, output_path):
         f_out.write(decompressed_data)
 
 # Fungsi untuk memampatkan gambar menggunakan Brotli
-def compress_image(input_path, output_path):
+def compress_image(input_path, output_path, quality=5):
     with open(input_path, 'rb') as f_in:
         image_data = f_in.read()
-        compressed_data = brotli.compress(image_data)
+        compressed_data = brotli.compress(image_data, quality=quality)
 
     with open(output_path, 'wb') as f_out:
         f_out.write(compressed_data)
@@ -59,40 +91,83 @@ def embed_image(secret_image, cover_image, output_path):
     if secret_image.mode == 'RGBA':
         secret_image = secret_image.convert('RGB')
 
-    # Get dimensions of the cover image
-    width, height = cover_image.size
+    # Check if the secret image is grayscale
+    if secret_image.mode == 'L':
+        # Convert the cover image to grayscale if it's not already
+        if cover_image.mode != 'L':
+            cover_image = cover_image.convert('L')
 
-    # Save the original size of the secret image
-    original_secret_size = secret_image.size
+        # Get dimensions of the cover image
+        width, height = cover_image.size
 
-    # Resize the secret image to fit within the cover image without stretching
-    secret_image = secret_image.resize((width, height))
+        # Save the original size of the secret image
+        original_secret_size = secret_image.size
 
-    # Convert images to numpy arrays
-    secret_pixels = np.array(secret_image)
-    cover_pixels = np.array(cover_image)
+        # Resize the secret image to fit within the cover image without stretching
+        secret_image = secret_image.resize((width, height))
 
-    # Embed the secret image into the cover image using LSB with increased bits
-    for y in range(height):
-        for x in range(width):
-            for c in range(3):  # RGB channels
+        # Convert images to numpy arrays
+        secret_pixels = np.array(secret_image)
+        cover_pixels = np.array(cover_image)
+
+        # Embed the secret image into the cover image using LSB with increased bits
+        for y in range(height):
+            for x in range(width):
                 # Clear the last 3 LSBs of the cover pixel
-                cover_pixels[y, x, c] &= ~7
+                cover_pixels[y, x] &= ~7
                 # Set the last 3 LSBs of the cover pixel to the corresponding bits of the secret image
-                cover_pixels[y, x, c] |= (secret_pixels[y, x, c] >> 5) & 7
+                cover_pixels[y, x] |= (secret_pixels[y, x] >> 5) & 7
 
-    # Save the resulting image
-    embedded_image = Image.fromarray(cover_pixels)
-    embedded_image.save(output_path)
+        # Save the resulting image
+        embedded_image = Image.fromarray(cover_pixels)
+        embedded_image.save(output_path)
 
-    # Calculate PSNR and MSE
-    mse = np.mean((secret_pixels - cover_pixels) ** 2)
-    psnr = 20 * math.log10(255.0 / math.sqrt(mse))
+        # Calculate PSNR and MSE
+        mse = np.mean((secret_pixels - cover_pixels) ** 2)
+        psnr = 20 * math.log10(255.0 / math.sqrt(mse))
 
-    return psnr, mse
+        return psnr, mse
+
+    else:  # If secret image is not grayscale
+        # Get dimensions of the cover image
+        width, height = cover_image.size
+
+        # Save the original size of the secret image
+        original_secret_size = secret_image.size
+
+        # Resize the secret image to fit within the cover image without stretching
+        secret_image = secret_image.resize((width, height))
+
+        # Convert images to numpy arrays
+        secret_pixels = np.array(secret_image)
+        cover_pixels = np.array(cover_image)
+
+        # Embed the secret image into the cover image using LSB with increased bits
+        for y in range(height):
+            for x in range(width):
+                for c in range(3):  # RGB channels
+                    # Clear the last 3 LSBs of the cover pixel
+                    cover_pixels[y, x, c] &= ~7
+                    # Set the last 3 LSBs of the cover pixel to the corresponding bits of the secret image
+                    cover_pixels[y, x, c] |= (secret_pixels[y, x, c] >> 5) & 7
+
+        # Save the resulting image
+        embedded_image = Image.fromarray(cover_pixels)
+        embedded_image.save(output_path)
+
+        # Calculate PSNR and MSE
+        mse = np.mean((secret_pixels - cover_pixels) ** 2)
+        psnr = 20 * math.log10(255.0 / math.sqrt(mse))
+
+        return psnr, mse
 
 # Modifikasi fungsi ekstraksi gambar untuk mengembalikan nilai PSNR dan MSE
 def extract_image(stego_image, output_cover_path, output_secret_path):
+    # Check if the input image is grayscale
+    if stego_image.mode == 'L':
+        # If grayscale, convert it to RGB for processing
+        stego_image = stego_image.convert('RGB')
+
     # Get dimensions of the stego image
     width, height = stego_image.size
     # Create a new image to store the extracted secret image
@@ -112,26 +187,13 @@ def extract_image(stego_image, output_cover_path, output_secret_path):
     cover_image = stego_image.copy()
     cover_image.save(output_cover_path)
 
-    # # Calculate PSNR and MSE
-    # secret_pixels = np.array(extracted_image)
-    # cover_pixels = np.array(stego_image)
-    # mse = np.mean((secret_pixels - cover_pixels) ** 2)
-    # psnr = 20 * math.log10(255.0 / math.sqrt(mse))
+    # Calculate PSNR and MSE
+    secret_pixels = np.array(extracted_image)
+    cover_pixels = np.array(stego_image)
+    mse = np.mean((secret_pixels - cover_pixels) ** 2)
+    psnr = 20 * math.log10(255.0 / math.sqrt(mse))
 
-    # return psnr, mse
-
-def generate_visual_cbc(image_data):
-    img = Image.open(BytesIO(image_data))
-    visual_cbc_img = img.copy()
-    draw = ImageDraw.Draw(visual_cbc_img)
-
-    block_size = 16  # AES block size is 16 bytes
-    width, height = img.size
-    for y in range(0, height, block_size):
-        for x in range(0, width, block_size):
-            draw.rectangle([x, y, x + block_size, y + block_size], outline='black')
-
-    return visual_cbc_img
+    return psnr, mse
 
 class MyClass:
     def __init__(self, request):
@@ -230,48 +292,90 @@ def decryption():
 
 @app.route('/encrypt', methods=['POST'])
 def encrypt():
-    if 'file' not in request.files:
-        return 'No file part'
+    try:
+        # Mendapatkan data dari request
+        image_file = request.files['image']
+        key = request.form['key']
 
-    file = request.files['file']
-    if file.filename == '':
-        return 'No selected file'
+        # Membaca data gambar
+        image_data = image_file.read()
 
-    if file:
-        filename = file.filename
-        input_image_data = file.stream.read()
-        
-        try:
-            img = Image.open(BytesIO(input_image_data))
-            encrypted_image = encrypt_image(input_image_data, key, iv)
-            visual_cbc_image = generate_visual_cbc(encrypted_image)
+        # Melakukan enkripsi pada gambar
+        encrypted_image = encrypt_image(image_data, key.encode())
 
-            # Save visual CBC image as file
-            visual_cbc_filename = 'visual_cbc.png'
-            visual_cbc_path = 'static/' + visual_cbc_filename
-            visual_cbc_image.save(visual_cbc_path)
+        # Dapatkan timestamp saat ini sebagai bagian dari nama file
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        output_filename = f"static/encrypted_{timestamp}.png"
 
-            return visual_cbc_filename
-        except Exception as e:
-            return str(e)
+        # Menyimpan gambar terenkripsi
+        # Mendapatkan format gambar dari nama file asli
+        original_format = Image.open(io.BytesIO(image_data)).format
+        # Menambahkan format gambar saat menyimpan
+        with open(output_filename, 'wb') as f:
+            f.write(encrypted_image)
 
-@app.route('/decrypt/<filename>')
-def decrypt(filename):
-    decrypted_filename = 'decrypted_' + filename
-    input_image_path = os.path.join(static_folder, filename)
-    output_image_path = os.path.join(static_folder, decrypted_filename)
-    decrypt_image(input_image_path, output_image_path, key, iv)
-    return send_file(output_image_path, as_attachment=True)
+        return jsonify({"message": "Encryption successful", "output_filename": output_filename})
 
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/show/<filename>')
-def show(filename):
-    return send_file(os.path.join(static_folder, filename), mimetype='image/png')
+@app.route('/decrypt', methods=['POST'])
+def decrypt():
+    try:
+        # Mendapatkan data dari request
+        encrypted_image_file = request.files['image']
+        key = request.form['key'].encode()
 
+        # Membaca data gambar terenkripsi
+        encrypted_image_data = encrypted_image_file.read()
+
+        # Mengambil IV dari data terenkripsi
+        iv = encrypted_image_data[:AES.block_size]
+
+        # Melakukan dekripsi pada gambar
+        decrypted_image_data = decrypt_image(encrypted_image_data, key, iv)
+
+        # Dapatkan timestamp saat ini sebagai bagian dari nama file
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        output_filename = f"static/decrypted_{timestamp}.png"
+
+        # Menyimpan gambar terdekripsi
+        write_image(output_filename, decrypted_image_data)
+
+        return jsonify({"message": "Decryption successful", "output_filename": output_filename})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
 @app.route('/compress', methods=['GET'])
 def compression():
     return render_template('compress.html', action='compress')
 
+@app.route('/compress', methods=['POST'])
+def compress():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'})
+    
+    file = request.files['file']
+    
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'})
+
+    if file:
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        file_extension = os.path.splitext(file.filename)[1]
+        input_path = f'static/uploaded_{timestamp}{file_extension}'
+        file.save(input_path)
+        
+        output_path = f'static/compressed_{timestamp}{file_extension}.br'
+        compress_image(input_path, output_path)
+
+        # Hapus file input setelah dikompresi
+        os.remove(input_path)
+
+        output_image_name = os.path.basename(output_path)
+        return jsonify({'output_image_name': output_image_name, 'success': True})
+    
 @app.route('/decompress', methods=['GET'])
 def decompression():
     return render_template('decompress.html', action='compress')

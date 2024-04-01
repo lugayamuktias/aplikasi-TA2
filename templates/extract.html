@@ -15,8 +15,8 @@
             {% if extracted_image_name %}
             <h2>Extracted Image</h2>
             <img src="{{ url_for('static', filename=extracted_image_name) }}" alt="Extracted Image">
-            <!-- <p>PSNR: {{ psnr }}</p>
-            <p>MSE: {{ mse }}</p> -->
+            <p>PSNR: {{ psnr }}</p>
+            <p>MSE: {{ mse }}</p>
             {% endif %}
         </div>
     </div>
