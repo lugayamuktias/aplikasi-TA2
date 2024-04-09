@@ -50,7 +50,7 @@ def write_masked_image(filename, data, width, height):
     # Menyimpan gambar dalam format PNG
     img.save(filename)
 
-# Fungsi untuk melakukan dekripsi pada citra terenkripsi yang telah dimasked
+# Fungsi untuk melakukan dekripsi pada gambar yang telah dimasked
 def decrypt_masked_image(masked_image, key):
     # Melakukan unmasking pada gambar
     unmasked_image = unmask_image(masked_image)
@@ -109,6 +109,8 @@ def compress_image(input_path, output_path, quality=5):
         f_out.write(compressed_data)
 
 def embed_image(secret_image, cover_image, output_path):
+    global original_secret_size
+
     # Convert both images to RGB mode if one of them is RGBA
     if cover_image.mode == 'RGBA':
         cover_image = cover_image.convert('RGB')
@@ -144,17 +146,13 @@ def embed_image(secret_image, cover_image, output_path):
 
         # Save the resulting image
         embedded_image = Image.fromarray(cover_pixels)
-
-        # Save original secret size as metadata
-        embedded_image.info['original_secret_size'] = original_secret_size
-
         embedded_image.save(output_path)
 
         # Calculate PSNR and MSE
         mse = np.mean((secret_pixels - cover_pixels) ** 2)
         psnr = 20 * math.log10(255.0 / math.sqrt(mse))
 
-        return psnr, mse, original_secret_size
+        return psnr, mse
 
     else:  # If secret image is not grayscale
         # Get dimensions of the cover image
@@ -181,18 +179,15 @@ def embed_image(secret_image, cover_image, output_path):
 
         # Save the resulting image
         embedded_image = Image.fromarray(cover_pixels)
-
-        # Save original secret size as metadata
-        embedded_image.info['original_secret_size'] = original_secret_size
-
         embedded_image.save(output_path)
 
         # Calculate PSNR and MSE
         mse = np.mean((secret_pixels - cover_pixels) ** 2)
         psnr = 20 * math.log10(255.0 / math.sqrt(mse))
 
-        return psnr, mse, original_secret_size
-    
+        return psnr, mse
+
+# Modifikasi fungsi ekstraksi gambar untuk mengembalikan nilai PSNR dan MSE
 def extract_image(stego_image, output_cover_path, output_secret_path):
     # Check if the input image is grayscale
     if stego_image.mode == 'L':
@@ -201,11 +196,9 @@ def extract_image(stego_image, output_cover_path, output_secret_path):
 
     # Get dimensions of the stego image
     width, height = stego_image.size
-
     # Create a new image to store the extracted secret image
     extracted_image = Image.new('RGB', (width, height))
     extracted_pixels = extracted_image.load()
-
     # Extract the secret image from the stego image using LSB with increased bits
     for y in range(height):
         for x in range(width):
@@ -214,12 +207,11 @@ def extract_image(stego_image, output_cover_path, output_secret_path):
                 # Extract the last 3 bits from the stego image pixel and use them for the extracted image pixel
                 pixel[c] = stego_image.getpixel((x, y))[c] & 7  # Mask with 7 to get last 3 bits
             extracted_pixels[x, y] = tuple(int(p * 255 // 7) for p in pixel)  # Scale and convert to integer
-
     # Save the extracted secret image
     extracted_image.save(output_secret_path)
-
     # Save the cover image
-    stego_image.save(output_cover_path)
+    cover_image = stego_image.copy()
+    cover_image.save(output_cover_path)
 
     # Calculate PSNR and MSE
     secret_pixels = np.array(extracted_image)
@@ -227,10 +219,7 @@ def extract_image(stego_image, output_cover_path, output_secret_path):
     mse = np.mean((secret_pixels - cover_pixels) ** 2)
     psnr = 20 * math.log10(255.0 / math.sqrt(mse))
 
-    # Read original secret size from metadata
-    original_secret_size = stego_image.info.get('original_secret_size')
-
-    return psnr, mse, original_secret_size
+    return psnr, mse
 
 class MyClass:
     def __init__(self, request):
@@ -266,8 +255,9 @@ def embed():
             cover_image.save(cover_image_path)
             secret_image.save(secret_image_path)
 
-            # Baca gambar rahasia
+            # Baca gambar rahasia dan dapatkan ukurannya
             secret_image = Image.open(secret_image_path)
+            secret_image_size = secret_image.size
 
             # Dapatkan timestamp saat ini sebagai bagian dari nama file
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -276,10 +266,10 @@ def embed():
             output_path = f'static/embedded_{timestamp}.png'
 
             # Memanggil fungsi untuk menyembunyikan gambar rahasia
-            psnr, mse, original_secret_size = embed_image(secret_image, Image.open(cover_image_path), output_path)
+            psnr, mse = embed_image(secret_image, Image.open(cover_image_path), output_path)
 
-            # Mengirimkan nama file gambar yang dihasilkan, nilai PSNR, MSE, dan ukuran asli gambar rahasia ke template
-            return render_template('embed.html', action='embed', output_image_name=os.path.basename(output_path), psnr=psnr, mse=mse, original_secret_size=original_secret_size)
+            # Mengirimkan nama file gambar yang dihasilkan dan nilai PSNR dan MSE ke template
+            return render_template('embed.html', action='embed', output_image_name=os.path.basename(output_path), psnr=psnr, mse=mse)
 
         except Exception as e:
             return f'Error embedding image: {e}'
@@ -309,15 +299,15 @@ def extract():
             output_secret_path = f'static/extracted_secret_{timestamp}.png'
             output_cover_path = f'static/extracted_cover_{timestamp}.png'
 
-            # Memanggil fungsi extract_image dengan original_secret_size
-            psnr, mse, original_secret_size = extract_image(stego_image, output_cover_path, output_secret_path)
+            # Call extract_image function
+            extract_image(stego_image, output_cover_path, output_secret_path)
 
             # Redirect ke halaman utama setelah selesai
-            return render_template('extract.html', action='extract', extracted_image_name=os.path.basename(output_secret_path), psnr=psnr, mse=mse, original_secret_size=original_secret_size)
+            return render_template('extract.html', action='extract', extracted_image_name=os.path.basename(output_secret_path))
 
         except Exception as e:
             return f'Error extracting image: {e}'
-        
+
 @app.route('/encrypt', methods=['GET'])
 def encryption():
     return render_template('encrypted.html', action='encrypt')
