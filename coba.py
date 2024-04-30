@@ -61,14 +61,26 @@ def decrypt_image(encrypted_data, original_shape, key, iv=fixed_iv, mode=AES.MOD
 
     return decryptedImage
 
-# Fungsi untuk mendekompresi gambar menggunakan Brotli
-def decompress_image(input_path, output_path):
-    with open(input_path, 'rb') as f_in:
-        compressed_data = f_in.read()
-        decompressed_data = brotli.decompress(compressed_data)
-
-    with open(output_path, 'wb') as f_out:
-        f_out.write(decompressed_data)
+def decompress_image_with_dwt(input_path, output_path, compression_level=2):
+    # Baca gambar yang telah dikompresi menggunakan OpenCV
+    img = cv2.imread(input_path, cv2.IMREAD_UNCHANGED)
+    
+    # Gambar yang dibaca adalah gambar yang telah direkonstruksi dari koefisien yang dikuantisasi
+    # Kita perlu memisahkan kembali saluran warna dan menerapkan invers DWT pada setiap saluran
+    coeffs_from_img = [pywt.dwt2(img[:,:,i], 'haar') for i in range(img.shape[2])]
+    LLs, subbands = zip(*coeffs_from_img)
+    
+    # Dekuantisasi subband tinggi frekuensi
+    dequantized_subbands = []
+    for subband in subbands:
+        dequantized_subbands.append([band * (2**compression_level) for band in subband])
+    
+    # Rekonstruksi gambar dari koefisien yang telah didekuantisasi
+    reconstructed_channels = [pywt.idwt2((LLs[i], tuple(dequantized_subbands[i])), 'haar') for i in range(len(LLs))]
+    reconstructed_img = np.stack(reconstructed_channels, axis=-1)
+    
+    # Simpan gambar yang telah direkonstruksi
+    cv2.imwrite(output_path, reconstructed_img)
 
 def compress_image_with_dwt(input_path, output_path, compression_level=2):
     # Baca gambar menggunakan OpenCV
@@ -87,10 +99,12 @@ def compress_image_with_dwt(input_path, output_path, compression_level=2):
     reconstructed_channels = [pywt.idwt2((LLs[i], tuple(quantized_subbands[i])), 'haar') for i in range(len(LLs))]
     reconstructed_img = np.stack(reconstructed_channels, axis=-1)
     
-    # Simpan gambar hasil kompresi dengan parameter kompresi
-    # Menggunakan JPEG dengan kualitas yang disesuaikan untuk kompresi yang lebih baik
-    cv2.imwrite(output_path, reconstructed_img, [int(cv2.IMWRITE_JPEG_QUALITY), 100 - compression_level * 10])
-
+    # Menentukan format berdasarkan ekstensi file asli
+    file_extension = os.path.splitext(output_path)[1][1:].upper()  # Mengambil ekstensi dan mengubahnya menjadi format yang diterima oleh OpenCV
+    if file_extension == 'JPG':
+        file_extension = 'JPEG'  # OpenCV menggunakan JPEG bukan JPG
+    cv2.imwrite(output_path, reconstructed_img, [int(cv2.IMWRITE_JPEG_QUALITY), 100 - compression_level * 10] if file_extension == 'JPEG' else [])
+    
 def embed_image(secret_image, cover_image, output_path):
     # Convert both images to RGB mode if one of them is RGBA
     if cover_image.mode == 'RGBA':
@@ -105,21 +119,25 @@ def embed_image(secret_image, cover_image, output_path):
             cover_image = cover_image.convert('L')
 
         # Get dimensions of the cover image
-        width, height = cover_image.size
+        cover_width, cover_height = cover_image.size
+
+        # Get dimensions of the secret image
+        secret_width, secret_height = secret_image.size
+
+        # Check if the secret image fits within the cover image
+        if secret_width > cover_width or secret_height > cover_height:
+            raise ValueError("Secret image dimensions exceed cover image dimensions")
 
         # Save the original size of the secret image
-        original_secret_size = secret_image.size
-
-        # Resize the secret image to fit within the cover image without stretching
-        secret_image = secret_image.resize((width, height))
+        original_secret_size = (secret_width, secret_height)
 
         # Convert images to numpy arrays
         secret_pixels = np.array(secret_image)
         cover_pixels = np.array(cover_image)
 
         # Embed the secret image into the cover image using LSB with increased bits
-        for y in range(height):
-            for x in range(width):
+        for y in range(secret_height):
+            for x in range(secret_width):
                 # Clear the last 3 LSBs of the cover pixel
                 cover_pixels[y, x] &= ~7
                 # Set the last 3 LSBs of the cover pixel to the corresponding bits of the secret image
@@ -141,21 +159,25 @@ def embed_image(secret_image, cover_image, output_path):
 
     else:  # If secret image is not grayscale
         # Get dimensions of the cover image
-        width, height = cover_image.size
+        cover_width, cover_height = cover_image.size
+
+        # Get dimensions of the secret image
+        secret_width, secret_height = secret_image.size
+
+        # Check if the secret image fits within the cover image
+        if secret_width > cover_width or secret_height > cover_height:
+            raise ValueError("Secret image dimensions exceed cover image dimensions")
 
         # Save the original size of the secret image
-        original_secret_size = secret_image.size
-
-        # Resize the secret image to fit within the cover image without stretching
-        secret_image = secret_image.resize((width, height))
+        original_secret_size = (secret_width, secret_height)
 
         # Convert images to numpy arrays
         secret_pixels = np.array(secret_image)
         cover_pixels = np.array(cover_image)
 
         # Embed the secret image into the cover image using LSB with increased bits
-        for y in range(height):
-            for x in range(width):
+        for y in range(secret_height):
+            for x in range(secret_width):
                 for c in range(3):  # RGB channels
                     # Clear the last 3 LSBs of the cover pixel
                     cover_pixels[y, x, c] &= ~7
@@ -175,6 +197,7 @@ def embed_image(secret_image, cover_image, output_path):
         psnr_val = psnr(cover_pixels.astype(float), np.array(cover_image).astype(float), data_range=255)
 
         return psnr_val, mse_val, original_secret_size
+
      
 def extract_image(stego_image, output_cover_path, output_secret_path):
     # Check if the input image is grayscale
@@ -386,24 +409,18 @@ def compress_image():
 
     if file:
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-
         file_extension = os.path.splitext(file.filename)[1]
         input_path = f'static/uploaded_{timestamp}{file_extension}'
         file.save(input_path)
         
-        output_path = f'static/compressed_{timestamp}.jpg'  # Menggunakan .jpg untuk output
+        output_path = f'static/compressed_{timestamp}{file_extension}'  # Menggunakan ekstensi asli
         
-        # Mendapatkan nilai tingkat kompresi dari form HTML
         compression_level = int(request.form.get('compression_level', 5))
         
-        # Memanggil fungsi kompresi DWT yang telah diperbarui
         compress_image_with_dwt(input_path, output_path, compression_level)
 
-        # Memeriksa apakah gambar berhasil disimpan sebelum menghapus gambar asli
         if os.path.exists(output_path):
-            # Hapus file input setelah dikompresi
             os.remove(input_path)
-
             output_image_name = os.path.basename(output_path)
             return jsonify({'output_image_name': output_image_name, 'success': True})
         else:
