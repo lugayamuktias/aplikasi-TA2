@@ -14,6 +14,7 @@ from skimage.metrics import mean_squared_error as mse
 import math
 import pywt
 import time
+import imageio
 from io import BytesIO
 
 app = Flask(__name__, static_folder='static')
@@ -71,23 +72,24 @@ def decompress_image(input_path, output_path):
 
 def compress_image_with_dwt(input_path, output_path, compression_level=2):
     # Baca gambar menggunakan OpenCV
-    img = cv2.imread(input_path)
+    img = cv2.imread(input_path, cv2.IMREAD_UNCHANGED)
     
     # Terapkan transformasi DWT (Discrete Wavelet Transform) pada setiap saluran warna
     coeffs = [pywt.dwt2(img[:,:,i], 'haar') for i in range(img.shape[2])]
     LLs, subbands = zip(*coeffs)
     
-    # Quantisasi koefisien
+    # Kuantisasi hanya pada subband tinggi frekuensi
     quantized_subbands = []
     for subband in subbands:
-        quantized_subbands.append([np.round(coeff / (2**compression_level)) * (2**compression_level) for coeff in subband])
+        quantized_subbands.append([np.round(band / (2**compression_level)) * (2**compression_level) for band in subband])
     
     # Rekonstruksi gambar dari koefisien yang telah dikuantisasi
-    reconstructed_channels = [pywt.idwt2((LL, tuple(subband)), 'haar') for LL, subband in zip(LLs, quantized_subbands)]
+    reconstructed_channels = [pywt.idwt2((LLs[i], tuple(quantized_subbands[i])), 'haar') for i in range(len(LLs))]
     reconstructed_img = np.stack(reconstructed_channels, axis=-1)
     
-    # Simpan gambar hasil kompresi
-    cv2.imwrite(output_path, reconstructed_img)
+    # Simpan gambar hasil kompresi dengan parameter kompresi
+    # Menggunakan JPEG dengan kualitas yang disesuaikan untuk kompresi yang lebih baik
+    cv2.imwrite(output_path, reconstructed_img, [int(cv2.IMWRITE_JPEG_QUALITY), 100 - compression_level * 10])
 
 def embed_image(secret_image, cover_image, output_path):
     # Convert both images to RGB mode if one of them is RGBA
@@ -383,23 +385,29 @@ def compress_image():
         return jsonify({'error': 'No selected file'})
 
     if file:
-        timestamp = int(time.time())
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+
         file_extension = os.path.splitext(file.filename)[1]
         input_path = f'static/uploaded_{timestamp}{file_extension}'
         file.save(input_path)
         
-        output_path = f'static/compressed_{timestamp}{file_extension}'
+        output_path = f'static/compressed_{timestamp}.jpg'  # Menggunakan .jpg untuk output
         
         # Mendapatkan nilai tingkat kompresi dari form HTML
         compression_level = int(request.form.get('compression_level', 5))
         
+        # Memanggil fungsi kompresi DWT yang telah diperbarui
         compress_image_with_dwt(input_path, output_path, compression_level)
 
-        # Hapus file input setelah dikompresi
-        os.remove(input_path)
+        # Memeriksa apakah gambar berhasil disimpan sebelum menghapus gambar asli
+        if os.path.exists(output_path):
+            # Hapus file input setelah dikompresi
+            os.remove(input_path)
 
-        output_image_name = os.path.basename(output_path)
-        return jsonify({'output_image_name': output_image_name, 'success': True})
+            output_image_name = os.path.basename(output_path)
+            return jsonify({'output_image_name': output_image_name, 'success': True})
+        else:
+            return jsonify({'error': 'Failed to compress image'})
     
 @app.route('/decompress', methods=['GET'])
 def decompression():

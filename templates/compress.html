@@ -12,8 +12,8 @@
             <div id="inputPreview"></div>
             <br>
             <label for="compression_level">Compression Level:</label><br>
-            <input type="range" id="compression_level" name="compression_level" min="1" max="10" value="5"><br>
-            <output for="compression_level" id="compression_value"></output><br><br>
+            <input type="range" id="compression_level" name="compression_level" min="1" max="10" value="5" oninput="updateCompressionValue(this.value)"><br>
+            <output for="compression_level" id="compression_value">5</output><br><br>
             <input type="submit" value="Compress Image">
         </form>
     </div>
@@ -43,6 +43,11 @@
             preview.appendChild(img);
         }
         reader.readAsDataURL(file);
+    }
+
+    function updateCompressionValue(value) {
+        var compressionValueOutput = document.getElementById('compression_value');
+        compressionValueOutput.value = value;
     }
 </script>
 {% endblock %}
