@@ -417,9 +417,12 @@ def compress_image():
         
         compression_level = int(request.form.get('compression_level', 5))
         
+        # Memanggil fungsi kompresi DWT yang telah diperbarui
         compress_image_with_dwt(input_path, output_path, compression_level)
 
+        # Memeriksa apakah gambar berhasil disimpan sebelum menghapus gambar asli
         if os.path.exists(output_path):
+            # Hapus file input setelah dikompresi
             os.remove(input_path)
             output_image_name = os.path.basename(output_path)
             return jsonify({'output_image_name': output_image_name, 'success': True})
