@@ -1,4 +1,5 @@
-{% extends "layout.html" %} {% block content %}
+{% extends "layout.html" %}
+{% block content %}
 
 <h1>Image Compression</h1>
 
@@ -7,7 +8,12 @@
         <h2>Compress Image</h2>
         <form action="/compress" method="post" enctype="multipart/form-data">
             <label for="input_path">Input Image:</label><br>
-            <input type="file" id="input_path" name="file"><br><br>
+            <input type="file" id="input_path" name="file" onchange="previewImage(event, 'inputPreview')"><br><br>
+            <div id="inputPreview"></div>
+            <br>
+            <label for="compression_level">Compression Level:</label><br>
+            <input type="range" id="compression_level" name="compression_level" min="1" max="10" value="5"><br>
+            <output for="compression_level" id="compression_value"></output><br><br>
             <input type="submit" value="Compress Image">
         </form>
     </div>

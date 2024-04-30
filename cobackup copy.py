@@ -23,9 +23,6 @@ fixed_iv = "LugayaLuluss2024".encode('utf-8')[:16]
 
 # Function to encrypt image
 def encrypt_image(image, key, iv=fixed_iv, mode=AES.MODE_CBC):
-    # Pastikan kunci memiliki panjang 32 byte untuk AES-256
-    key = pad(key, 32)[:32]
-    
     # Convert original image data to bytes
     imageOrigBytes = image.tobytes()
 
@@ -35,19 +32,22 @@ def encrypt_image(image, key, iv=fixed_iv, mode=AES.MODE_CBC):
     ciphertext = cipher.encrypt(imageOrigBytesPadded)
 
     # Convert ciphertext bytes to encrypted image data
-    # Tidak perlu menambahkan 'void' karena padding sudah menyesuaikan ukuran
-    imageEncrypted = np.frombuffer(ciphertext, dtype=np.uint8)
+    paddedSize = len(imageOrigBytesPadded) - len(imageOrigBytes)
+    void = image.shape[1] * image.shape[2] - len(iv) - paddedSize
+    ivCiphertextVoid = iv + ciphertext + bytes(void)
+    imageEncrypted = np.frombuffer(ivCiphertextVoid, dtype=image.dtype).reshape(image.shape[0] + 1, image.shape[1], image.shape[2])
 
-    # Karena np.frombuffer tidak menyimpan bentuk asli, kita simpan ukuran asli
-    original_shape = image.shape
-
-    return imageEncrypted, original_shape, mode, iv
+    return imageEncrypted, mode, iv
 
 # Function to decrypt image
-def decrypt_image(encrypted_data, original_shape, key, iv=fixed_iv, mode=AES.MODE_CBC):
-    # Pastikan kunci memiliki panjang 32 byte untuk AES-256
-    key = pad(key, 32)[:32]
-    
+def decrypt_image(image, key, iv=fixed_iv, mode=AES.MODE_CBC):
+    # Convert encrypted image data to ciphertext bytes
+    rowEncrypted, columnOrig, depthOrig = image.shape 
+    rowOrig = rowEncrypted - 1
+    encryptedBytes = image.tobytes()
+    encrypted_iv = encryptedBytes[:len(iv)]
+    encrypted_data = encryptedBytes[len(iv):]
+
     # Decrypt
     cipher = AES.new(key, mode, iv)
     decryptedImageBytesPadded = cipher.decrypt(encrypted_data)
@@ -56,7 +56,7 @@ def decrypt_image(encrypted_data, original_shape, key, iv=fixed_iv, mode=AES.MOD
     decryptedImageBytes = unpad(decryptedImageBytesPadded, AES.block_size)
 
     # Convert bytes to decrypted image data
-    decryptedImage = np.frombuffer(decryptedImageBytes, dtype=np.uint8).reshape(original_shape)
+    decryptedImage = np.frombuffer(decryptedImageBytes, image.dtype).reshape(rowOrig, columnOrig, depthOrig)
 
     return decryptedImage
 
@@ -324,13 +324,11 @@ def encrypt():
         key = request.form['key']
 
         # Encrypt image
-        encrypted_image, original_shape, mode, iv = encrypt_image(image, key.encode(), fixed_iv)
+        encrypted_image, mode, _ = encrypt_image(image, key.encode(), fixed_iv)
 
         # Save encrypted image temporarily
-        # Karena encrypted_image sekarang dalam bentuk numpy array, kita perlu mengubahnya kembali menjadi gambar
-        encrypted_image_reshaped = encrypted_image.reshape(-1, original_shape[1] * original_shape[2])
-        _, buffer = cv2.imencode('.jpg', encrypted_image_reshaped)
-        encrypted_image_bytes = BytesIO(encrypted_image)
+        _, buffer = cv2.imencode('.jpg', encrypted_image)
+        encrypted_image_bytes = BytesIO(buffer)
 
         return send_file(encrypted_image_bytes, mimetype='image/jpeg', as_attachment=True, download_name='encrypted_image.jpg')
 
@@ -352,13 +350,8 @@ def decrypt():
         # Get key from user input
         key = request.form['key']
 
-        # Untuk dekripsi, kita perlu mengetahui original_shape dari gambar yang dienkripsi
-        # Ini harus disimpan atau dikirim bersamaan dengan gambar yang dienkripsi
-        # Misalnya, kita bisa menggunakan nilai default atau menyimpannya di tempat lain
-        original_shape = (image.shape[0], image.shape[1], 3)  # Contoh menggunakan shape asli sebagai default
-
         # Decrypt image
-        decrypted_image = decrypt_image(image.flatten(), original_shape, key.encode(), fixed_iv)
+        decrypted_image = decrypt_image(image, key.encode(), fixed_iv)
 
         # Save decrypted image temporarily
         _, buffer = cv2.imencode('.jpg', decrypted_image)
@@ -372,6 +365,7 @@ def decrypt():
 def compression():
     return render_template('compress.html', action='compress')
 
+@app.route('/compress', methods=['POST'])
 @app.route('/compress', methods=['POST'])
 def compress_image():
     if 'file' not in request.files:
