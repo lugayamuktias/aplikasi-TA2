@@ -24,25 +24,22 @@ fixed_iv = "LugayaLuluss2024".encode('utf-8')[:16]
 
 # Function to encrypt image
 def encrypt_image(image, key, iv=fixed_iv, mode=AES.MODE_CBC):
-    # Pastikan kunci memiliki panjang 32 byte untuk AES-256
-    key = pad(key, 32)[:32]
-    
-    # Convert original image data to bytes
-    imageOrigBytes = image.tobytes()
+    # Ensure valid key length
+    if len(key) != 32:
+        raise ValueError("Key length must be 32 bytes (256 bits) for AES-256")
 
-    # Encrypt
-    cipher = AES.new(key, mode, iv)
-    imageOrigBytesPadded = pad(imageOrigBytes, AES.block_size)
-    ciphertext = cipher.encrypt(imageOrigBytesPadded)
+    # Convert image data to bytes
+    image_bytes = image.tobytes()
 
-    # Convert ciphertext bytes to encrypted image data
-    # Tidak perlu menambahkan 'void' karena padding sudah menyesuaikan ukuran
-    imageEncrypted = np.frombuffer(ciphertext, dtype=np.uint8)
+    # Encrypt data
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    encrypted_bytes = cipher.encrypt(pad(image_bytes, AES.block_size))
 
-    # Karena np.frombuffer tidak menyimpan bentuk asli, kita simpan ukuran asli
-    original_shape = image.shape
+    # Reshape encrypted data back to image shape
+    num_pixels = len(image_bytes) // 3  # Number of pixels in the original image
+    encrypted_image = np.frombuffer(encrypted_bytes, dtype=np.uint8)[:num_pixels * 3].reshape(image.shape)
 
-    return imageEncrypted, original_shape, mode, iv
+    return encrypted_image
 
 # Function to decrypt image
 def decrypt_image(encrypted_data, original_shape, key, iv=fixed_iv, mode=AES.MODE_CBC):
@@ -349,13 +346,11 @@ def encrypt():
         key = request.form['key']
 
         # Encrypt image
-        encrypted_image, original_shape, mode, iv = encrypt_image(image, key.encode(), fixed_iv)
+        encrypted_image = encrypt_image(image, key.encode(), fixed_iv)
 
         # Save encrypted image temporarily
-        # Karena encrypted_image sekarang dalam bentuk numpy array, kita perlu mengubahnya kembali menjadi gambar
-        encrypted_image_reshaped = encrypted_image.reshape(-1, original_shape[1] * original_shape[2])
-        _, buffer = cv2.imencode('.jpg', encrypted_image_reshaped)
-        encrypted_image_bytes = BytesIO(encrypted_image)
+        _, buffer = cv2.imencode('.jpg', encrypted_image)
+        encrypted_image_bytes = BytesIO(buffer)
 
         return send_file(encrypted_image_bytes, mimetype='image/jpeg', as_attachment=True, download_name='encrypted_image.jpg')
 
