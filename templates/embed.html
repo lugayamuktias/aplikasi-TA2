@@ -21,6 +21,11 @@
                 <p>PSNR: {{ psnr }}</p>
                 <p>MSE: {{ mse }}</p>
             {% endif %}
+            <!-- Menampilkan ukuran asli gambar rahasia -->
+            {% if original_secret_size %}
+            <h2>Original Secret Size</h2>
+            <p>Width: {{ original_secret_size[0] }}, Height: {{ original_secret_size[1] }}</p>
+            {% endif %}
         </div>
     </div>
 

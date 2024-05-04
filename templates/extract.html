@@ -8,7 +8,11 @@
                 <label for="stego_image">Stego Image:</label><br>
                 <input type="file" id="stego_image" name="stego_image"><br><br>
                 <div id="stego_image_preview"></div><br>
-                <input type="hidden" name="original_secret_size" value="{{ original_secret_size }}">
+                <!-- Menambahkan input untuk original_secret_size -->
+                <label for="original_width">Original Width:</label><br>
+                <input type="text" id="original_width" name="original_width"><br><br>
+                <label for="original_height">Original Height:</label><br>
+                <input type="text" id="original_height" name="original_height"><br><br>
                 <input type="submit" value="Extract Image">
             </form>
     

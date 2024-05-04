@@ -1,4 +1,5 @@
 from flask import Flask, session, request, render_template, request, redirect, url_for, send_from_directory, jsonify, send_file
+from flask_session import Session
 from PIL import Image, ImageDraw, ImageFont
 import os
 import cv2
@@ -13,50 +14,14 @@ from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.metrics import mean_squared_error as mse
 import math
 import pywt
-import time
-import imageio
+import sys
+import io
 from io import BytesIO
 
 app = Flask(__name__, static_folder='static')
-
-# Fixed IV in 16-bit format
-fixed_iv = "LugayaLuluss2024".encode('utf-8')[:16]
-
-# Function to encrypt image
-def encrypt_image(image, key, iv=fixed_iv, mode=AES.MODE_CBC):
-    # Ensure valid key length
-    if len(key) != 32:
-        raise ValueError("Key length must be 32 bytes (256 bits) for AES-256")
-
-    # Convert image data to bytes
-    image_bytes = image.tobytes()
-
-    # Encrypt data
-    cipher = AES.new(key, AES.MODE_CBC, iv)
-    encrypted_bytes = cipher.encrypt(pad(image_bytes, AES.block_size))
-
-    # Reshape encrypted data back to image shape
-    num_pixels = len(image_bytes) // 3  # Number of pixels in the original image
-    encrypted_image = np.frombuffer(encrypted_bytes, dtype=np.uint8)[:num_pixels * 3].reshape(image.shape)
-
-    return encrypted_image
-
-# Function to decrypt image
-def decrypt_image(encrypted_data, original_shape, key, iv=fixed_iv, mode=AES.MODE_CBC):
-    # Pastikan kunci memiliki panjang 32 byte untuk AES-256
-    key = pad(key, 32)[:32]
-    
-    # Decrypt
-    cipher = AES.new(key, mode, iv)
-    decryptedImageBytesPadded = cipher.decrypt(encrypted_data)
-
-    # Unpad decrypted data
-    decryptedImageBytes = unpad(decryptedImageBytesPadded, AES.block_size)
-
-    # Convert bytes to decrypted image data
-    decryptedImage = np.frombuffer(decryptedImageBytes, dtype=np.uint8).reshape(original_shape)
-
-    return decryptedImage
+# Configure session to use filesystem (you can also use other session backends)
+app.config['SESSION_TYPE'] = 'filesystem'
+Session(app)
 
 def decompress_image_with_dwt(input_path, output_path, compression_level=2):
     # Baca gambar yang telah dikompresi menggunakan OpenCV
@@ -196,7 +161,7 @@ def embed_image(secret_image, cover_image, output_path):
         return psnr_val, mse_val, original_secret_size
 
      
-def extract_image(stego_image, output_cover_path, output_secret_path):
+def extract_image(stego_image, output_cover_path, output_secret_path, original_width, original_height):
     # Check if the input image is grayscale
     if stego_image.mode == 'L':
         # If grayscale, convert it to RGB for processing
@@ -221,19 +186,22 @@ def extract_image(stego_image, output_cover_path, output_secret_path):
     # Save the extracted secret image
     extracted_image.save(output_secret_path)
 
+    # Crop the extracted secret image to original width and height
+    extracted_cover_image = stego_image.crop((0, 0, original_width, original_height))
+
+    # Crop the cover image to original width and height
+    extracted_secret_image = extracted_image.crop((0, 0, original_width, original_height))
+
     # Save the cover image
-    stego_image.save(output_cover_path)
+    extracted_secret_image.save(output_secret_path)
 
     # Calculate PSNR and MSE
-    secret_pixels = np.array(extracted_image)
-    cover_pixels = np.array(stego_image)
+    secret_pixels = np.array(extracted_secret_image)
+    cover_pixels = np.array(extracted_cover_image)
     mse = np.mean((secret_pixels - cover_pixels) ** 2)
     psnr = 20 * math.log10(255.0 / math.sqrt(mse))
 
-    # Read original secret size from metadata
-    original_secret_size = stego_image.info.get('original_secret_size')
-
-    return psnr, mse, original_secret_size
+    return psnr, mse
 
 class MyClass:
     def __init__(self, request):
@@ -312,11 +280,15 @@ def extract():
             output_secret_path = f'static/extracted_secret_{timestamp}.png'
             output_cover_path = f'static/extracted_cover_{timestamp}.png'
 
+            # Ambil input untuk lebar dan tinggi asli gambar rahasia
+            original_width = int(request.form['original_width'])  # Konversi menjadi integer
+            original_height = int(request.form['original_height'])  # Konversi menjadi integer
+
             # Memanggil fungsi extract_image dengan original_secret_size
-            psnr, mse, original_secret_size = extract_image(stego_image, output_cover_path, output_secret_path)
+            psnr, mse = extract_image(stego_image, output_cover_path, output_secret_path, original_width, original_height)
 
             # Redirect ke halaman utama setelah selesai
-            return render_template('extract.html', action='extract', extracted_image_name=os.path.basename(output_secret_path), psnr=psnr, mse=mse, original_secret_size=original_secret_size)
+            return render_template('extract.html', action='extract', extracted_image_name=os.path.basename(output_secret_path), psnr=psnr, mse=mse)
 
         except Exception as e:
             return f'Error extracting image: {e}'
@@ -329,32 +301,70 @@ def encryption():
 def decryption():
     return render_template('decrypted.html', action='decrypt')
 
-@app.route('/encrypt', methods=['GET', 'POST'])
-def encrypt():
-    if request.method == 'POST':
-        if 'image' not in request.files:
-            return redirect(request.url)
-        file = request.files['image']
-        if file.filename == '':
-            return redirect(request.url)
+# Set mode
+mode = AES.MODE_CBC
+# mode = AES.MODE_ECB
+if mode != AES.MODE_CBC and mode != AES.MODE_ECB:
+    print('Only CBC and ECB mode supported...')
+    sys.exit()
 
-        # Read uploaded image
-        nparr = np.frombuffer(file.read(), np.uint8)
-        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+# Set sizes
+keySize = 32
+ivSize = AES.block_size if mode == AES.MODE_CBC else 0
 
-        # Get key from user input
-        key = request.form['key']
+@app.route('/upload', methods=['POST'])
+def upload():
+    uploaded_file = request.files['file']
+    if uploaded_file.filename != '':
+        # Save the uploaded file to a temporary location
+        file_path = os.path.join('uploads', uploaded_file.filename)
+        uploaded_file.save(file_path)
 
-        # Encrypt image
-        encrypted_image = encrypt_image(image, key.encode(), fixed_iv)
+        # Read the uploaded image
+        imageOrig = cv2.imread(file_path)
+        rowOrig, columnOrig, depthOrig = imageOrig.shape
 
-        # Save encrypted image temporarily
-        _, buffer = cv2.imencode('.jpg', encrypted_image)
-        encrypted_image_bytes = BytesIO(buffer)
+        # Check for minimum width
+        minWidth = (AES.block_size + AES.block_size) // depthOrig + 1
+        if columnOrig < minWidth:
+            return 'The minimum width of the image must be {} pixels, so that IV and padding can be stored in a single additional row!'.format(minWidth)
 
-        return send_file(encrypted_image_bytes, mimetype='image/jpeg', as_attachment=True, download_name='encrypted_image.jpg')
+        # Convert original image data to bytes
+        imageOrigBytes = imageOrig.tobytes()
 
-    return render_template('encrypt.html')
+        # Encrypt
+        key = get_random_bytes(keySize)
+        iv = get_random_bytes(ivSize)
+        cipher = AES.new(key, AES.MODE_CBC, iv) if mode == AES.MODE_CBC else AES.new(key, AES.MODE_ECB)
+        imageOrigBytesPadded = pad(imageOrigBytes, AES.block_size)
+        ciphertext = cipher.encrypt(imageOrigBytesPadded)
+
+        # Convert ciphertext bytes to encrypted image data
+        paddedSize = len(imageOrigBytesPadded) - len(imageOrigBytes)
+        void = columnOrig * depthOrig - ivSize - paddedSize
+        ivCiphertextVoid = iv + ciphertext + bytes(void)
+        imageEncrypted = np.frombuffer(ivCiphertextVoid, dtype=imageOrig.dtype).reshape(rowOrig + 1, columnOrig, depthOrig)
+
+        # Delete the temporary file
+        os.remove(file_path)
+
+        # Pass encrypted image data to the template
+        return render_template('encrypted.html', encrypted_image=imageEncrypted)
+    else:
+        return 'No file uploaded!'
+
+@app.route('/display_encrypted_image')
+def display_encrypted_image():
+    # Retrieve encrypted image from the session
+    encrypted_image = session.get('encrypted_image')
+    print("Encrypted image:", encrypted_image)  # Add this line for debugging
+    if encrypted_image is not None:
+        # Convert encrypted image data to bytes
+        encrypted_image_bytes = encrypted_image.tobytes()
+        # Send the encrypted image data as a file
+        return send_file(io.BytesIO(encrypted_image_bytes), mimetype='image/jpeg')
+    else:
+        return 'Encrypted image not found!'
 
 @app.route('/decrypt', methods=['GET', 'POST'])
 def decrypt():
@@ -372,13 +382,8 @@ def decrypt():
         # Get key from user input
         key = request.form['key']
 
-        # Untuk dekripsi, kita perlu mengetahui original_shape dari gambar yang dienkripsi
-        # Ini harus disimpan atau dikirim bersamaan dengan gambar yang dienkripsi
-        # Misalnya, kita bisa menggunakan nilai default atau menyimpannya di tempat lain
-        original_shape = (image.shape[0], image.shape[1], 3)  # Contoh menggunakan shape asli sebagai default
-
         # Decrypt image
-        decrypted_image = decrypt_image(image.flatten(), original_shape, key.encode(), fixed_iv)
+        decrypted_image = decrypt_image(image, key.encode(), fixed_iv)
 
         # Save decrypted image temporarily
         _, buffer = cv2.imencode('.jpg', decrypted_image)

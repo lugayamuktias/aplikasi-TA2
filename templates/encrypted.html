@@ -1,18 +1,14 @@
 {% extends "layout.html" %} {% block content %}
 
-    <h1>Image Encryption AES-CBC</h1>
+<h1>Image Encryption and Decryption</h1>
+<h1>Upload Image</h1>
+<form action="/upload" method="POST" enctype="multipart/form-data">
+    <input type="file" name="file">
+    <button type="submit">Upload</button>
+</form>
+{% if encrypted_image is defined and encrypted_image.size > 0 %}
+    <h2>Encrypted Image</h2>
+    <img src="{{ url_for('display_encrypted_image', encrypted_image=encrypted_image) }}" alt="Encrypted Image">
+{% endif %}
 
-    <div class="card">
-        <div class="card-body">
-            <h1>Image Encryption</h1>
-            <form action="/encrypt" method="post" enctype="multipart/form-data">
-                <label for="image">Select Image:</label><br>
-                <input type="file" id="image" name="image" accept="image/*"><br><br>
-                <label for="key">Enter Key:</label><br>
-                <input type="text" id="key" name="key"><br><br>
-                <button type="submit">Encrypt Image</button>
-            </form>
-        </div>
-    </div>    
-    
 {% endblock %}
