@@ -7,6 +7,12 @@
             <form action="/extract" method="post" enctype="multipart/form-data">
                 <label for="stego_image">Stego Image:</label><br>
                 <input type="file" id="stego_image" name="stego_image"><br><br>
+                <input type="checkbox" id="use_aes" name="use_aes">
+                <label for="use_aes">Use AES Encryption</label><br>
+                <div id="password_field" style="display:none;">
+                    <label for="password">Password:</label><br>
+                    <input type="password" id="password" name="password"><br>
+                </div>
                 <div id="stego_image_preview"></div><br>
                 <!-- Menambahkan input untuk original_secret_size -->
                 <label for="original_width">Original Width:</label><br>
@@ -94,6 +100,16 @@
             // Show preview for stego image
             $('#stego_image').change(function() {
                 showImagePreview(this, '#stego_image_preview');
+            });
+            
+            
+            // Show or hide password field based on checkbox state
+            $('#use_aes').change(function() {
+                if (this.checked) {
+                    $('#password_field').show();
+                } else {
+                    $('#password_field').hide();
+                }
             });
         });
     </script>
