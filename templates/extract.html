@@ -7,13 +7,14 @@
             <form action="/extract" method="post" enctype="multipart/form-data">
                 <label for="stego_image">Stego Image:</label><br>
                 <input type="file" id="stego_image" name="stego_image"><br><br>
+                <div id="stego_image_preview"></div><br>
                 <input type="checkbox" id="use_aes" name="use_aes">
                 <label for="use_aes">Use AES Encryption</label><br>
                 <div id="password_field" style="display:none;">
                     <label for="password">Password:</label><br>
                     <input type="password" id="password" name="password"><br>
                 </div>
-                <div id="stego_image_preview"></div><br>
+                <!-- <br> -->
                 <!-- Menambahkan input untuk original_secret_size -->
                 <label for="original_width">Original Width:</label><br>
                 <input type="text" id="original_width" name="original_width"><br><br>

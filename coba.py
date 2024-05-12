@@ -67,7 +67,10 @@ def compress_image_with_dwt(input_path, output_path, compression_level=2):
         file_extension = 'JPEG'  # OpenCV menggunakan JPEG bukan JPG
     cv2.imwrite(output_path, reconstructed_img, [int(cv2.IMWRITE_JPEG_QUALITY), 100 - compression_level * 10] if file_extension == 'JPEG' else [])
     
-def embed_image(secret_image, cover_image, output_path):
+def embed_image(secret_image, cover_image, output_path, use_aes=False, password=None):
+    if use_aes and not password:
+        raise ValueError("Password is required for AES encryption.")
+
     # Convert both images to RGB mode if one of them is RGBA
     if cover_image.mode == 'RGBA':
         cover_image = cover_image.convert('RGB')
@@ -97,20 +100,34 @@ def embed_image(secret_image, cover_image, output_path):
         secret_pixels = np.array(secret_image)
         cover_pixels = np.array(cover_image)
 
+        if use_aes:
+            # Encrypt the secret image using AES in CBC mode
+            cipher = AES.new(password.encode(), AES.MODE_CBC, b'0000000000000000')
+            secret_bytes = pad(np.array(secret_image).tobytes(), AES.block_size)
+            encrypted_secret_bytes = cipher.encrypt(secret_bytes)
+            # Reshape the encrypted bytes to match the dimensions of the secret image
+            secret_pixels = np.frombuffer(encrypted_secret_bytes, dtype=np.uint8)
+            secret_pixels = secret_pixels[:len(secret_pixels) - len(secret_pixels) % (secret_image.size[0] * secret_image.size[1])]
+            secret_pixels = secret_pixels.reshape((secret_image.size[1], secret_image.size[0], -1))
+
         # Embed the secret image into the cover image using LSB with increased bits
         for y in range(secret_height):
             for x in range(secret_width):
                 # Clear the last 3 LSBs of the cover pixel
-                cover_pixels[y, x] &= ~7
+                cover_pixels[y, x] = cover_pixels[y, x] & (~7)
                 # Set the last 3 LSBs of the cover pixel to the corresponding bits of the secret image
-                cover_pixels[y, x] |= (secret_pixels[y, x] >> 5) & 7
+                cover_pixels[y, x] = (cover_pixels[y, x] | ((secret_pixels[y, x] >> 5) & 7)).astype(np.uint8)
 
         # Save the resulting image
         embedded_image = Image.fromarray(cover_pixels)
 
         # Save original secret size as metadata
         embedded_image.info['original_secret_size'] = original_secret_size
-
+        
+        # Save password as metadata if AES is used
+        if use_aes:
+            embedded_image.info['password'] = password
+            
         embedded_image.save(output_path)
 
         # Calculate PSNR and MSE for embedded image compared to cover image
@@ -137,20 +154,33 @@ def embed_image(secret_image, cover_image, output_path):
         secret_pixels = np.array(secret_image)
         cover_pixels = np.array(cover_image)
 
+        if use_aes:
+            # Encrypt the secret image using AES in CBC mode
+            cipher = AES.new(password.encode(), AES.MODE_CBC, b'0000000000000000')
+            secret_bytes = pad(np.array(secret_image).tobytes(), AES.block_size)
+            encrypted_secret_bytes = cipher.encrypt(secret_bytes)
+            # Reshape the encrypted bytes to match the dimensions of the secret image
+            secret_pixels = np.frombuffer(encrypted_secret_bytes, dtype=np.uint8)
+            secret_pixels = secret_pixels[:len(secret_pixels) - len(secret_pixels) % (secret_image.size[0] * secret_image.size[1])]
+            secret_pixels = secret_pixels.reshape((secret_image.size[1], secret_image.size[0], -1))
+
         # Embed the secret image into the cover image using LSB with increased bits
         for y in range(secret_height):
             for x in range(secret_width):
-                for c in range(3):  # RGB channels
-                    # Clear the last 3 LSBs of the cover pixel
-                    cover_pixels[y, x, c] &= ~7
-                    # Set the last 3 LSBs of the cover pixel to the corresponding bits of the secret image
-                    cover_pixels[y, x, c] |= (secret_pixels[y, x, c] >> 5) & 7
+                # Clear the last 3 LSBs of the cover pixel
+                cover_pixels[y, x] = cover_pixels[y, x] & (~7)
+                # Set the last 3 LSBs of the cover pixel to the corresponding bits of the secret image
+                cover_pixels[y, x] = (cover_pixels[y, x] | ((secret_pixels[y, x] >> 5) & 7)).astype(np.uint8)
 
         # Save the resulting image
         embedded_image = Image.fromarray(cover_pixels)
 
         # Save original secret size as metadata
         embedded_image.info['original_secret_size'] = original_secret_size
+
+        # Save password as metadata if AES is used
+        if use_aes:
+            embedded_image.info['password'] = password
 
         embedded_image.save(output_path)
 
@@ -160,11 +190,12 @@ def embed_image(secret_image, cover_image, output_path):
 
         return psnr_val, mse_val, original_secret_size
 
-     
-def extract_image(stego_image, output_cover_path, output_secret_path, original_width, original_height):
-    # Check if the input image is grayscale
-    if stego_image.mode == 'L':
-        # If grayscale, convert it to RGB for processing
+def extract_image(stego_image, output_cover_path, output_secret_path, original_width, original_height, use_aes=False, password=None):
+    if use_aes and not password:
+        raise ValueError("Password is required for AES decryption.")
+
+    # Convert stego image to RGB mode if it's RGBA
+    if stego_image.mode == 'RGBA':
         stego_image = stego_image.convert('RGB')
 
     # Get dimensions of the stego image
@@ -174,7 +205,7 @@ def extract_image(stego_image, output_cover_path, output_secret_path, original_w
     extracted_image = Image.new('RGB', (width, height))
     extracted_pixels = extracted_image.load()
 
-    # Extract the secret image from the stego image using LSB with increased bits
+    # Extract the secret image from the stego image using LSB with increased bits for each color channel
     for y in range(height):
         for x in range(width):
             pixel = [0, 0, 0]
@@ -189,10 +220,24 @@ def extract_image(stego_image, output_cover_path, output_secret_path, original_w
     # Crop the extracted secret image to original width and height
     extracted_cover_image = stego_image.crop((0, 0, original_width, original_height))
 
-    # Crop the cover image to original width and height
+    # Crop the secret image to original width and height
     extracted_secret_image = extracted_image.crop((0, 0, original_width, original_height))
 
-    # Save the cover image
+    # If AES decryption is enabled, perform decryption
+    if use_aes:
+        # Decrypt the secret image using AES in CBC mode
+        cipher = AES.new(password.encode(), AES.MODE_CBC, b'0000000000000000')
+        secret_bytes = np.array(extracted_secret_image).tobytes()
+        decrypted_secret_bytes = cipher.decrypt(secret_bytes)
+        # Reshape the decrypted bytes to match the dimensions of the secret image
+        secret_pixels = np.frombuffer(decrypted_secret_bytes, dtype=np.uint8)
+        secret_pixels = secret_pixels.reshape((original_height, original_width, -1))
+    else:
+        # Use the extracted secret image directly
+        secret_pixels = np.array(extracted_secret_image)
+
+    # Save the secret image
+    extracted_secret_image = Image.fromarray(secret_pixels)
     extracted_secret_image.save(output_secret_path)
 
     # Calculate PSNR and MSE
@@ -246,8 +291,16 @@ def embed():
             # Path untuk menyimpan gambar stego yang disisipkan gambar rahasia
             output_path = f'static/embedded_{timestamp}.png'
 
+            # Periksa apakah opsi AES Encryption dicentang
+            use_aes = False
+            if 'use_aes' in request.form:
+                use_aes = True
+                password = request.form['password']
+            else:
+                password = None
+
             # Memanggil fungsi untuk menyembunyikan gambar rahasia
-            psnr_val, mse_val, original_secret_size = embed_image(secret_image, Image.open(cover_image_path), output_path)
+            psnr_val, mse_val, original_secret_size = embed_image(secret_image, Image.open(cover_image_path), output_path, use_aes=use_aes, password=password)
 
             # Mengirimkan nama file gambar yang dihasilkan, nilai PSNR, MSE, dan ukuran asli gambar rahasia ke template
             return render_template('embed.html', action='embed', output_image_name=os.path.basename(output_path), psnr=psnr_val, mse=mse_val, original_secret_size=original_secret_size)
@@ -284,8 +337,16 @@ def extract():
             original_width = int(request.form['original_width'])  # Konversi menjadi integer
             original_height = int(request.form['original_height'])  # Konversi menjadi integer
 
+            # Periksa apakah opsi AES Encryption dicentang
+            use_aes = False
+            if 'use_aes' in request.form:
+                use_aes = True
+                password = request.form['password']
+            else:
+                password = None
+
             # Memanggil fungsi extract_image dengan original_secret_size
-            psnr, mse = extract_image(stego_image, output_cover_path, output_secret_path, original_width, original_height)
+            psnr, mse = extract_image(stego_image, output_cover_path, output_secret_path, original_width, original_height, use_aes=use_aes, password=password)
 
             # Redirect ke halaman utama setelah selesai
             return render_template('extract.html', action='extract', extracted_image_name=os.path.basename(output_secret_path), psnr=psnr, mse=mse)
