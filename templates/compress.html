@@ -19,14 +19,18 @@
     </div>
 </div>
 
-<div class="card" id="outputCard" style="display: none;">
+{% if output_image_name %}
+<div class="card" id="outputCard">
     <div class="card-body">
         <h2>Compressed Image</h2>
-        <div id="outputPreview"></div>
-        <br>
-        <p id="outputMessage"></p>
+        <img src="{{ url_for('static', filename=output_image_name) }}" alt="Output Image"><br><br>
+        <p>Original Size: {{ original_size }} bytes</p>
+        <p>Compressed Size: {{ compressed_size }} bytes</p>
+        <p>Compression Ratio: {{ compression_ratio }}</p>
+        <p>Size Reduction: {{ size_reduction }}%</p>
     </div>
 </div>
+{% endif %}
 
 <script>
     function previewImage(event, previewId) {
@@ -50,4 +54,5 @@
         compressionValueOutput.value = value;
     }
 </script>
+
 {% endblock %}

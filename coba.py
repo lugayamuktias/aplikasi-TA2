@@ -12,11 +12,13 @@ from Crypto.Util.Padding import pad, unpad
 from Crypto.Random import get_random_bytes
 from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.metrics import mean_squared_error as mse
+from skimage.metrics import structural_similarity as ssim
 import math
 import pywt
 import sys
 import io
 from io import BytesIO
+import time
 
 app = Flask(__name__, static_folder='static')
 # Configure session to use filesystem (you can also use other session backends)
@@ -68,6 +70,8 @@ def compress_image_with_dwt(input_path, output_path, compression_level=2):
     cv2.imwrite(output_path, reconstructed_img, [int(cv2.IMWRITE_JPEG_QUALITY), 100 - compression_level * 10] if file_extension == 'JPEG' else [])
     
 def embed_image(secret_image, cover_image, output_path, use_aes=False, password=None):
+    start_time = time.time()
+    
     if use_aes and not password:
         raise ValueError("Password is required for AES encryption.")
 
@@ -124,8 +128,12 @@ def embed_image(secret_image, cover_image, output_path, use_aes=False, password=
     # Calculate PSNR and MSE for embedded image compared to cover image
     mse_val = mse(cover_pixels.astype(float), np.array(cover_image).astype(float))
     psnr_val = psnr(cover_pixels.astype(float), np.array(cover_image).astype(float), data_range=255)
+    ssim_val = ssim(cover_pixels, np.array(cover_image), multichannel=True, data_range=cover_pixels.max() - cover_pixels.min(), win_size=3, channel_axis=2)
 
-    return psnr_val, mse_val, (secret_width, secret_height)
+    end_time = time.time()  # End timing
+    execution_time = end_time - start_time  # Calculate execution time
+
+    return psnr_val, mse_val, ssim_val, (secret_width, secret_height), execution_time
 
 def extract_image(stego_image, output_cover_path, output_secret_path, use_aes=False, password=None):
     if use_aes and not password:
@@ -238,11 +246,11 @@ def embed():
                 password = None
 
             # Memanggil fungsi untuk menyembunyikan gambar rahasia
-            psnr_val, mse_val, original_secret_size = embed_image(secret_image, Image.open(cover_image_path), output_path, use_aes=use_aes, password=password)
+            psnr_val, mse_val, ssim_val, original_secret_size, execution_time = embed_image(secret_image, Image.open(cover_image_path), output_path, use_aes=use_aes, password=password)
 
-            # Mengirimkan nama file gambar yang dihasilkan, nilai PSNR, MSE, dan ukuran asli gambar rahasia ke template
-            return render_template('embed.html', action='embed', output_image_name=os.path.basename(output_path), psnr=psnr_val, mse=mse_val, original_secret_size=original_secret_size)
-
+            # Mengirimkan nama file gambar yang dihasilkan, nilai PSNR, MSE, ukuran asli gambar rahasia, dan waktu eksekusi ke template
+            return render_template('embed.html', action='embed', output_image_name=os.path.basename(output_path), psnr=psnr_val, mse=mse_val, ssim=ssim_val, original_secret_size=original_secret_size, execution_time=execution_time)
+        
         except Exception as e:
             return f'Error embedding image: {e}'
 
@@ -419,15 +427,30 @@ def compress_image():
         
         compression_level = int(request.form.get('compression_level', 5))
         
+        # Dapatkan ukuran file asli
+        original_size = os.path.getsize(input_path)
+
         # Memanggil fungsi kompresi DWT yang telah diperbarui
         compress_image_with_dwt(input_path, output_path, compression_level)
 
         # Memeriksa apakah gambar berhasil disimpan sebelum menghapus gambar asli
         if os.path.exists(output_path):
+            # Dapatkan ukuran file terkompresi
+            compressed_size = os.path.getsize(output_path)
+            
+            # Hitung rasio kompresi dan persentase reduksi ukuran file
+            compression_ratio = original_size / compressed_size
+            size_reduction = ((original_size - compressed_size) / original_size) * 100
+            
             # Hapus file input setelah dikompresi
             os.remove(input_path)
             output_image_name = os.path.basename(output_path)
-            return jsonify({'output_image_name': output_image_name, 'success': True})
+            return render_template('compress.html', 
+                                   output_image_name=output_image_name, 
+                                   original_size=original_size, 
+                                   compressed_size=compressed_size, 
+                                   compression_ratio=compression_ratio, 
+                                   size_reduction=size_reduction)
         else:
             return jsonify({'error': 'Failed to compress image'})
     

@@ -1,54 +1,79 @@
 {
 	"folders": [
 		{
+			"name": "demo-lugaya",
+			"path": "C:/xampp/htdocs/demo-lugaya"
+		},
+		{
+			"name": "gamification",
 			"path": "C:/laragon/www/gamification"
 		},
 		{
+			"name": "project-web2",
+			"path": "C:/xampp/htdocs/project-web2"
+		},
+		{
+			"name": "IWA",
 			"path": "C:/Users/Dell/Pictures/IWA"
 		},
 		{
+			"name": "test-web",
 			"path": "../../Semester 7/Pemrograman Basis Data/test-web"
 		},
 		{
+			"name": "Aplikasi",
 			"path": "."
 		},
 		{
+			"name": "vuexy-html-bootstrap5-admin-template",
 			"path": "C:/Users/Dell/Downloads/Telegram Desktop/vuexy-html-bootstrap5-admin-template"
 		},
 		{
+			"name": "tixia.dexignzone.com",
 			"path": "C:/Users/Dell/Downloads/tixia.dexignzone.com"
 		},
 		{
+			"name": "steganography-main",
 			"path": "../TA2/steganography-main"
 		},
 		{
+			"name": "Image-Steganography-master",
 			"path": "../TA2/Image-Steganography-master"
 		},
 		{
+			"name": "image-encryption-main",
 			"path": "../TA2/image-encryption-main"
 		},
 		{
+			"name": "AES-CBC-ECB-Example-master",
 			"path": "../TA2/AES-CBC-ECB-Example-master/AES-CBC-ECB-Example-master"
 		},
 		{
+			"name": "BasicImageEncryptionCBC-master",
 			"path": "../TA2/BasicImageEncryptionCBC-master/BasicImageEncryptionCBC-master"
 		},
 		{
+			"name": "Latihan Pemrograman Web",
 			"path": "../../Semester 6/Latihan Pemrograman Web"
 		},
 		{
+			"name": "Projek Web Dasar",
 			"path": "../../Semester 6/Projek Web Dasar"
 		},
 		{
+			"name": "Kalkulator",
 			"path": "../Kalkulator"
 		},
 		{
+			"name": "Shim Clearance",
 			"path": "../Shim Clearance"
 		},
 		{
+			"name": "Image_Steganography_using_LSB-main",
 			"path": "../Referensi/Image_Steganography_using_LSB-main"
 		},
 		{
+			"name": "Image-steganography-master",
 			"path": "../Referensi/Image-steganography-master"
 		}
 	],

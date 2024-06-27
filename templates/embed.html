@@ -28,6 +28,8 @@
                 <img src="{{ url_for('static', filename=output_image_name) }}" alt="Output Image">
                 <p>PSNR: {{ psnr }}</p>
                 <p>MSE: {{ mse }}</p>
+                <p>SSIM: {{ ssim }}</p>
+                <p>Execution Time: {{ execution_time }} seconds</p>
             {% endif %}
             <!-- Menampilkan ukuran asli gambar rahasia -->
             {% if original_secret_size %}
